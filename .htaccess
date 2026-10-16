@@ -1,0 +1,9 @@
+Options -Indexes
+DirectoryIndex index.html
+
+# Agar perubahan index.html (judul, logo, menu) langsung tampil tanpa cache lama
+<IfModule mod_headers.c>
+  <FilesMatch "\.(html|php)$">
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
+</IfModule>
