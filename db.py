@@ -46,9 +46,9 @@ def _load_from_mysql(role: str) -> pd.DataFrame | None:
         conn = pymysql.connect(**cfg, connect_timeout=8)
         if role == "public":
             cols = ", ".join(PUBLIC_COLS)
-            df = pd.read_sql(f"SELECT {cols} FROM spektrum_frekuensi LIMIT 20000", conn)
+            df = pd.read_sql(f"SELECT {cols} FROM isr LIMIT 20000", conn)
         else:
-            df = pd.read_sql("SELECT * FROM spektrum_frekuensi LIMIT 20000", conn)
+            df = pd.read_sql("SELECT * FROM isr LIMIT 20000", conn)
         conn.close()
         return df
     except Exception:
