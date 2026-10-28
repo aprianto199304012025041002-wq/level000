@@ -93,3 +93,22 @@ def summary(role: str = "public") -> str:
     else:
         lines.append(f"Kota (10 terbesar): {df['CITY'].value_counts().head(10).to_dict()}")
     return "\n".join(lines)
+
+
+def test_connection() -> tuple[bool, str]:
+    """Coba konek MySQL, kembalikan (sukses, pesan)."""
+    cfg = _mysql_config()
+    if not cfg:
+        return False, "Secrets MySQL belum diisi (MYSQL_HOST/USER/PASSWORD/DB)."
+    try:
+        import pymysql
+        conn = pymysql.connect(**cfg, connect_timeout=8)
+        cur = conn.cursor()
+        cur.execute("SHOW TABLES")
+        tables = [r[0] for r in cur.fetchall()]
+        cur.execute("SELECT COUNT(*) FROM isr")
+        count = cur.fetchone()[0]
+        conn.close()
+        return True, f"OK. Tabel: {tables}. Baris di isr: {count:,}"
+    except Exception as e:
+        return False, str(e)
