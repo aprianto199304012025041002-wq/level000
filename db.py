@@ -81,19 +81,37 @@ def _load_csv(role: str) -> pd.DataFrame:
     return df.copy()
 
 
-def load(role: str = "public") -> pd.DataFrame:
-    """Coba MySQL dulu, fallback ke CSV."""
+def _load_uncached(role: str) -> tuple[pd.DataFrame, str]:
+    """Load data dan kembalikan (df, sumber). Tidak di-cache langsung."""
     df = _load_from_mysql(role)
     if df is not None and not df.empty:
+        return df, "MySQL"
+    return _load_csv(role), "CSV lokal"
+
+
+try:
+    import streamlit as st
+
+    @st.cache_data(ttl=300, show_spinner="Memuat data...")
+    def load(role: str = "public") -> pd.DataFrame:
+        """Cache 5 menit di Streamlit Cloud. Fallback ke tanpa cache di luar Streamlit."""
+        df, _ = _load_uncached(role)
         return df
-    return _load_csv(role)
 
+    @st.cache_data(ttl=300)
+    def data_source(role: str = "public") -> str:
+        _, src = _load_uncached(role)
+        return src
 
-def data_source(role: str = "public") -> str:
-    df = _load_from_mysql(role)
-    if df is not None and not df.empty:
-        return "MySQL"
-    return "CSV lokal"
+except ImportError:
+    # Di luar Streamlit (test lokal, CI)
+    def load(role: str = "public") -> pd.DataFrame:
+        df, _ = _load_uncached(role)
+        return df
+
+    def data_source(role: str = "public") -> str:
+        _, src = _load_uncached(role)
+        return src
 
 
 def last_mysql_error() -> str:
