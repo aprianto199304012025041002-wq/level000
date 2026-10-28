@@ -91,6 +91,9 @@ with st.sidebar:
     df_main = st.session_state.uploaded_df if (is_officer and st.session_state.uploaded_df is not None) else db.load(role)
     st.caption(f"Sumber data: **{src}**")
     st.caption(f"Baris: {len(df_main):,}")
+    mysql_err = db.last_mysql_error()
+    if mysql_err:
+        st.warning(f"MySQL error: {mysql_err}")
     if is_officer:
         if st.button("🔌 Tes Koneksi MySQL", use_container_width=True):
             ok, msg = db.test_connection()

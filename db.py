@@ -37,9 +37,14 @@ def _mysql_config() -> dict | None:
     return None
 
 
+_last_mysql_error: str = ""
+
+
 def _load_from_mysql(role: str) -> pd.DataFrame | None:
+    global _last_mysql_error
     cfg = _mysql_config()
     if not cfg:
+        _last_mysql_error = "Secrets MySQL belum lengkap."
         return None
     try:
         import pymysql
@@ -50,9 +55,15 @@ def _load_from_mysql(role: str) -> pd.DataFrame | None:
         else:
             df = pd.read_sql("SELECT * FROM isr LIMIT 20000", conn)
         conn.close()
+        _last_mysql_error = ""
         return df
-    except Exception:
+    except Exception as e:
+        _last_mysql_error = str(e)
         return None
+
+
+def last_mysql_error() -> str:
+    return _last_mysql_error
 
 
 @functools.lru_cache(maxsize=2)
