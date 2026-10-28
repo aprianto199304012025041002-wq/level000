@@ -28,6 +28,9 @@ def get_client() -> OpenAI:
 
 
 def ask(messages: list[dict], temperature: float = 0.3) -> str:
+    # Mode uji tanpa API: set MOCK_LLM=1 (tidak memanggil model sama sekali).
+    if _get("MOCK_LLM") == "1":
+        return "[MOCK] Jawaban contoh. Pesan terakhir:\n\n" + messages[-1]["content"]
     client = get_client()
     model = _get("QWEN_MODEL", "qwen-plus")
     resp = client.chat.completions.create(
