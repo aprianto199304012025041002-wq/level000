@@ -1,4 +1,4 @@
-"""Koneksi MySQL Hostinger. Versi 3. Fallback ke CSV jika MySQL tidak tersedia."""
+"""Koneksi MySQL dengan query langsung. Fallback ke CSV jika MySQL tidak tersedia."""
 import functools
 import os
 from pathlib import Path
@@ -10,12 +10,11 @@ load_dotenv()
 
 CSV_PATH = Path(__file__).parent / "data" / "QUERY_14_JANUARI_2026.csv"
 
-PUBLIC_COLS = [
-    "SERVICE", "SUBSERVICE", "STN_NAME", "STN_ADDR",
-    "CITY", "DISTRICT", "PROVINCE", "VILLAGE", "CLNT_NAME",
-]
+PUBLIC_COLS_SQL  = "service, subservice, stn_name, stn_addr, city, district, province, village, clnt_name"
+PUBLIC_COLS_PY   = ["SERVICE","SUBSERVICE","STN_NAME","STN_ADDR","CITY","DISTRICT","PROVINCE","VILLAGE","CLNT_NAME"]
 
-_last_mysql_error: str = ""
+_last_error: str = ""
+_mysql_ok:   bool | None = None   # None = belum dicek
 
 
 def _secret(name: str, default: str | None = None) -> str | None:
@@ -29,128 +28,155 @@ def _secret(name: str, default: str | None = None) -> str | None:
         return default
 
 
-def _mysql_config() -> dict | None:
-    host = _secret("MYSQL_HOST")
-    user = _secret("MYSQL_USER")
-    pwd  = _secret("MYSQL_PASSWORD")
-    dbname = _secret("MYSQL_DB")
-    if all([host, user, pwd, dbname]):
-        return {"host": host, "user": user, "password": pwd,
-                "database": dbname, "port": 3306}
-    return None
+def _cfg() -> dict | None:
+    h = _secret("MYSQL_HOST"); u = _secret("MYSQL_USER")
+    p = _secret("MYSQL_PASSWORD"); d = _secret("MYSQL_DB")
+    return {"host":h,"user":u,"password":p,"database":d,"port":3306} if all([h,u,p,d]) else None
 
 
-def _normalize(df: pd.DataFrame) -> pd.DataFrame:
-    """Normalkan nama kolom ke UPPERCASE dan buang kolom 'ID' jika ada."""
-    df.columns = [c.strip().upper() for c in df.columns]
-    if "ID" in df.columns:
-        df = df.drop(columns=["ID"])
-    return df
-
-
-def _load_from_mysql(role: str) -> pd.DataFrame | None:
-    global _last_mysql_error
-    cfg = _mysql_config()
+def _conn():
+    import pymysql
+    cfg = _cfg()
     if not cfg:
-        _last_mysql_error = "Secrets MySQL belum lengkap."
-        return None
+        raise RuntimeError("Secrets MySQL belum diisi.")
+    return pymysql.connect(**cfg, connect_timeout=8,
+                           cursorclass=pymysql.cursors.DictCursor)
+
+
+def _use_mysql() -> bool:
+    global _mysql_ok, _last_error
+    if _mysql_ok is not None:
+        return _mysql_ok
     try:
-        import pymysql
-        conn = pymysql.connect(**cfg, connect_timeout=8)
-        # Pakai SELECT * lalu filter kolom di Python
-        # supaya tidak bergantung pada case nama kolom di SQL
-        df = pd.read_sql("SELECT * FROM isr LIMIT 20000", conn)
-        conn.close()
-        df = _normalize(df)
-        if role == "public":
-            available = [c for c in PUBLIC_COLS if c in df.columns]
-            df = df[available].copy()
-        _last_mysql_error = ""
-        return df
+        c = _conn(); c.close()
+        _mysql_ok = True
     except Exception as e:
-        _last_mysql_error = str(e)
-        return None
+        _mysql_ok = False
+        _last_error = str(e)
+    return _mysql_ok
+
+
+def execute(sql: str, params: tuple = ()) -> pd.DataFrame:
+    """Jalankan SQL dan kembalikan DataFrame. Raise jika MySQL tidak tersedia."""
+    conn = _conn()
+    try:
+        df = pd.read_sql(sql, conn, params=params)
+        df.columns = [c.upper() for c in df.columns]
+        return df
+    finally:
+        conn.close()
+
+
+def search(query_text: str, role: str = "public", limit: int = 10) -> pd.DataFrame:
+    """
+    Cari baris relevan: MySQL LIKE jika tersedia, BM25 pandas jika fallback CSV.
+    """
+    if _use_mysql():
+        cols   = PUBLIC_COLS_SQL if role == "public" else "*"
+        terms  = [f"%{w}%" for w in query_text.split()[:4]]
+        if not terms:
+            return pd.DataFrame()
+        where  = " OR ".join(
+            ["stn_name LIKE %s","clnt_name LIKE %s","city LIKE %s","service LIKE %s"][:len(terms)]
+        )
+        sql = f"SELECT {cols} FROM isr WHERE {where} LIMIT {limit}"
+        try:
+            return execute(sql, tuple(terms[:4]))
+        except Exception:
+            pass
+
+    # Fallback CSV + BM25
+    import rag as _rag
+    df = _load_csv(role)
+    return _rag.search(query_text, df, k=limit)
 
 
 @functools.lru_cache(maxsize=2)
 def _load_csv(role: str) -> pd.DataFrame:
     df = pd.read_csv(CSV_PATH, low_memory=False)
     if role == "public":
-        available = [c for c in PUBLIC_COLS if c in df.columns]
-        return df[available].copy()
+        avail = [c for c in PUBLIC_COLS_PY if c in df.columns]
+        return df[avail].copy()
     return df.copy()
 
 
-def _load_uncached(role: str) -> tuple[pd.DataFrame, str]:
-    """Load data dan kembalikan (df, sumber). Tidak di-cache langsung."""
-    df = _load_from_mysql(role)
-    if df is not None and not df.empty:
-        return df, "MySQL"
-    return _load_csv(role), "CSV lokal"
-
-
-try:
-    import streamlit as st
-
-    @st.cache_data(ttl=300, show_spinner="Memuat data...")
-    def load(role: str = "public") -> pd.DataFrame:
-        """Cache 5 menit di Streamlit Cloud. Fallback ke tanpa cache di luar Streamlit."""
-        df, _ = _load_uncached(role)
-        return df
-
-    @st.cache_data(ttl=300)
-    def data_source(role: str = "public") -> str:
-        _, src = _load_uncached(role)
-        return src
-
-except ImportError:
-    # Di luar Streamlit (test lokal, CI)
-    def load(role: str = "public") -> pd.DataFrame:
-        df, _ = _load_uncached(role)
-        return df
-
-    def data_source(role: str = "public") -> str:
-        _, src = _load_uncached(role)
-        return src
-
-
-def last_mysql_error() -> str:
-    return _last_mysql_error
-
-
 def summary(role: str = "public") -> str:
-    df = load(role)
-    src = data_source(role)
-    lines = [
-        f"Sumber: {src}. Dataset: {len(df):,} baris, {len(df.columns)} kolom.",
-        f"Kolom: {', '.join(df.columns.tolist())}.",
-    ]
+    """Ringkasan dataset via SQL GROUP BY, fallback ke pandas."""
+    if _use_mysql():
+        try:
+            svc  = execute("SELECT service, COUNT(*) AS cnt FROM isr GROUP BY service ORDER BY cnt DESC")
+            prov = execute("SELECT province, COUNT(*) AS cnt FROM isr GROUP BY province")
+            total = execute("SELECT COUNT(*) AS cnt FROM isr").iloc[0]["CNT"]
+            lines = [
+                f"Sumber: MySQL. Total izin: {int(total):,}.",
+                f"Per layanan:\n{svc.to_string(index=False)}",
+                f"Per provinsi:\n{prov.to_string(index=False)}",
+            ]
+            if role == "officer":
+                exp = execute(
+                    "SELECT COUNT(*) AS cnt FROM isr WHERE validity_date < CURDATE()"
+                ).iloc[0]["CNT"]
+                lines.append(f"Expired: {int(exp):,} izin.")
+            return "\n".join(lines)
+        except Exception:
+            pass
+
+    df = _load_csv(role)
+    lines = [f"Sumber: CSV. Total: {len(df):,} baris."]
     if "SERVICE" in df.columns:
-        lines.append(f"Layanan: {df['SERVICE'].value_counts().to_dict()}")
-    if role == "officer":
-        if "PROVINCE" in df.columns:
-            lines.append(f"Provinsi: {df['PROVINCE'].value_counts().to_dict()}")
-        if "STATUS_SIMF" in df.columns:
-            lines.append(f"Status: {df['STATUS_SIMF'].value_counts().to_dict()}")
-    else:
-        if "CITY" in df.columns:
-            lines.append(f"Kota (10 terbesar): {df['CITY'].value_counts().head(10).to_dict()}")
+        lines.append(f"Per layanan:\n{df['SERVICE'].value_counts().to_string()}")
     return "\n".join(lines)
 
 
+def stats_for_header() -> dict:
+    """Statistik untuk kartu header halaman utama."""
+    if _use_mysql():
+        try:
+            row = execute("""
+                SELECT
+                  COUNT(*) AS total,
+                  SUM(validity_date >= CURDATE()) AS active,
+                  SUM(validity_date < CURDATE())  AS expired,
+                  SUM(validity_date IS NULL)       AS unknown
+                FROM isr
+            """).iloc[0]
+            return {k: int(v or 0) for k, v in row.items()}
+        except Exception:
+            pass
+    df = _load_csv("officer")
+    vd = pd.to_datetime(df.get("VALIDITY_DATE", pd.Series()), errors="coerce")
+    import datetime
+    today = pd.Timestamp(datetime.date.today())
+    return {
+        "TOTAL":   len(df),
+        "ACTIVE":  int((vd >= today).sum()),
+        "EXPIRED": int((vd < today).sum()),
+        "UNKNOWN": int(vd.isna().sum()),
+    }
+
+
+def data_source(_role: str = "public") -> str:
+    return "MySQL" if _use_mysql() else "CSV lokal"
+
+
+def last_mysql_error() -> str:
+    return _last_error
+
+
 def test_connection() -> tuple[bool, str]:
-    cfg = _mysql_config()
+    cfg = _cfg()
     if not cfg:
-        return False, "Secrets MySQL belum diisi (MYSQL_HOST/USER/PASSWORD/DB)."
+        return False, "Secrets MySQL belum diisi."
     try:
         import pymysql
         conn = pymysql.connect(**cfg, connect_timeout=8)
-        cur = conn.cursor()
+        cur  = conn.cursor()
         cur.execute("SELECT COUNT(*) FROM isr")
         count = cur.fetchone()[0]
         cur.execute("SHOW COLUMNS FROM isr")
         cols = [r[0].upper() for r in cur.fetchall()]
         conn.close()
-        return True, f"OK. Baris: {count:,}. Kolom ({len(cols)}): {cols[:10]}..."
+        global _mysql_ok; _mysql_ok = True
+        return True, f"OK. Baris: {count:,}. Kolom ({len(cols)}): {cols[:8]}..."
     except Exception as e:
         return False, str(e)

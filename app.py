@@ -37,18 +37,11 @@ st.markdown(style.FREQ_BAR, unsafe_allow_html=True)
 # ════════════════════════════════════════════════════════════════════════════
 if st.session_state.role is None:
 
-    # Statistik ringkas dari data officer
+    # Statistik ringkas dari MySQL/CSV
     try:
-        df_stats = db.load("officer")
-        df_stats["_vd"] = pd.to_datetime(
-            df_stats.get("VALIDITY_DATE", pd.Series()), errors="coerce"
-        )
-        today = datetime.date.today()
-        active  = int((df_stats["_vd"] >= pd.Timestamp(today)).sum())
-        expired = int((df_stats["_vd"] < pd.Timestamp(today)).sum())
-        unknown = int(df_stats["_vd"].isna().sum())
+        s = db.stats_for_header()
         st.markdown(
-            style.stat_cards_html(len(df_stats), active, expired, unknown),
+            style.stat_cards_html(s["TOTAL"], s["ACTIVE"], s["EXPIRED"], s["UNKNOWN"]),
             unsafe_allow_html=True,
         )
     except Exception:
@@ -133,13 +126,14 @@ with st.sidebar:
     st.session_state.provider = provider
 
     st.divider()
-    df_main = (
-        st.session_state.uploaded_df
-        if (is_officer and st.session_state.uploaded_df is not None)
-        else db.load(role)
-    )
+    uploaded_df = st.session_state.uploaded_df if is_officer else None
     src = db.data_source(role)
-    st.caption(f"Sumber: **{src}** · {len(df_main):,} baris")
+    try:
+        s = db.stats_for_header()
+        total = s["TOTAL"]
+    except Exception:
+        total = 0
+    st.caption(f"Sumber: **{src}** · {total:,} baris")
 
     mysql_err = db.last_mysql_error()
     if mysql_err:
@@ -160,7 +154,7 @@ with st.sidebar:
                 df_new.columns = [c.strip().upper() for c in df_new.columns]
                 st.success(f"Dimuat: {len(df_new):,} baris")
                 st.session_state.uploaded_df = df_new
-                df_main = df_new
+                uploaded_df = df_new
             except Exception as e:
                 st.error(f"Gagal: {e}")
         if st.session_state.uploaded_df is not None:
@@ -212,9 +206,10 @@ if user_input:
     with st.chat_message("assistant"):
         with st.spinner("Menganalisis..."):
             try:
-                context = analyst.build_context(user_input, df_main, role)
+                # uploaded_df diisi hanya jika petugas upload CSV baru
+                context = analyst.build_context(user_input, uploaded_df, role)
                 if not context:
-                    context = rag.retrieve(user_input, df_main, k=5)
+                    context = rag.retrieve(user_input, uploaded_df, k=5)
                 if not context:
                     context = db.summary(role)
                 messages = prompts.build_messages(user_input, context, role)

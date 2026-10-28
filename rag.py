@@ -1,59 +1,50 @@
-"""BM25 di atas dataframe yang sudah difilter per peran."""
+"""Pencarian konteks: delegasi ke db.search() (SQL) atau BM25 (CSV fallback)."""
 import math
 import re
 from collections import Counter
-from functools import lru_cache
 
 import pandas as pd
 
 
-def _tokenize(text: str) -> list[str]:
-    return re.findall(r"\w+", str(text).lower())
+def retrieve(query: str, df: pd.DataFrame | None, k: int = 5) -> str:
+    """
+    Jika df adalah None atau kosong, gunakan db.search().
+    Jika df diisi (upload CSV), gunakan BM25 lokal.
+    """
+    if df is None or df.empty:
+        import db
+        hits = db.search(query, k=k)
+        return hits.to_string(index=False) if not hits.empty else ""
 
-
-def _build_corpus(df: pd.DataFrame) -> list[tuple[str, list[str]]]:
-    """Gabungkan setiap baris menjadi satu dokumen teks."""
-    docs = []
-    for _, row in df.iterrows():
-        text = " ".join(str(v) for v in row.values if pd.notna(v))
-        docs.append((text, _tokenize(text)))
-    return docs
+    hits = search(query, df, k)
+    return hits.to_string(index=False) if not hits.empty else ""
 
 
 def search(query: str, df: pd.DataFrame, k: int = 5,
            k1: float = 1.5, b: float = 0.75) -> pd.DataFrame:
-    """Kembalikan k baris paling relevan dari df."""
-    corpus = _build_corpus(df)
-    q = _tokenize(query)
+    """BM25 di atas DataFrame (dipakai saat CSV/upload aktif)."""
+    def tok(t): return re.findall(r"\w+", str(t).lower())
+
+    corpus = [" ".join(str(v) for v in row if pd.notna(v)) for _, row in df.iterrows()]
+    tokens = [tok(c) for c in corpus]
+    q = tok(query)
     n = len(corpus)
     if n == 0 or not q:
         return df.head(0)
 
-    df_freq = Counter(t for _, toks in corpus for t in set(toks))
-    avg_len = sum(len(toks) for _, toks in corpus) / n
+    df_freq = Counter(t for toks in tokens for t in set(toks))
+    avg_len = sum(len(t) for t in tokens) / n
 
     scores = []
-    for _, toks in corpus:
+    for toks in tokens:
         tf = Counter(toks)
-        score = 0.0
-        for term in q:
-            if term not in tf:
-                continue
-            idf = math.log(1 + (n - df_freq[term] + 0.5) / (df_freq[term] + 0.5))
-            score += idf * tf[term] * (k1 + 1) / (
-                tf[term] + k1 * (1 - b + b * len(toks) / avg_len)
-            )
+        score = sum(
+            math.log(1 + (n - df_freq[t] + 0.5) / (df_freq[t] + 0.5))
+            * tf[t] * (k1 + 1) / (tf[t] + k1 * (1 - b + b * len(toks) / avg_len))
+            for t in q if t in tf
+        )
         scores.append(score)
 
-    df = df.copy()
-    df["_score"] = scores
-    result = df[df["_score"] > 0].nlargest(k, "_score").drop(columns=["_score"])
-    return result
-
-
-def retrieve(query: str, df: pd.DataFrame, k: int = 5) -> str:
-    """Konteks siap tempel ke prompt."""
-    hits = search(query, df, k)
-    if hits.empty:
-        return ""
-    return hits.to_string(index=False)
+    out = df.copy()
+    out["_score"] = scores
+    return out[out["_score"] > 0].nlargest(k, "_score").drop(columns=["_score"])
