@@ -121,9 +121,9 @@ def test_connection() -> tuple[bool, str]:
         tables = [r[0] for r in cur.fetchall()]
         cur.execute("SELECT COUNT(*) FROM isr")
         count = cur.fetchone()[0]
-        conn.close()
         cur.execute("SHOW COLUMNS FROM isr")
         cols = [r[0] for r in cur.fetchall()]
-        return True, f"OK. Baris: {count:,}. Kolom: {cols[:10]}"
+        conn.close()
+        return True, f"OK. Baris: {count:,}. Kolom ({len(cols)}): {cols}"
     except Exception as e:
         return False, str(e)
