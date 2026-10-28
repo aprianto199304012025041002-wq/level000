@@ -4,3 +4,4 @@ google-generativeai>=0.8
 pymysql>=1.1
 pandas>=2.0
 python-dotenv>=1.0
+plotly>=5.20
