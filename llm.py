@@ -36,7 +36,7 @@ def _ask_gemini(messages: list[dict], temperature: float) -> str:
         raise RuntimeError("GEMINI_API_KEY belum diisi di Secrets.")
     genai.configure(api_key=api_key)
 
-    model_name = _get("GEMINI_MODEL", "gemini-2.0-flash")
+    model_name = _get("GEMINI_MODEL", "gemini-3.8-flash")
     system = next((m["content"] for m in messages if m["role"] == "system"), None)
     history = [
         {"role": "user" if m["role"] == "user" else "model", "parts": [m["content"]]}
