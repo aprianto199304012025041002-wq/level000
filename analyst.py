@@ -64,10 +64,13 @@ def build_context(query: str, df: pd.DataFrame, role: str) -> str:
 
     # Kota / wilayah
     if "CITY" in df.columns:
+        PUBLIC_SAFE = ["CLNT_NAME","STN_NAME","STN_ADDR","SERVICE","SUBSERVICE","CITY","DISTRICT","PROVINCE","VILLAGE"]
+        OFFICER_EXTRA = ["FREQ","VALIDITY_DATE","ERP_PWR_DBM","CURR_LIC_NUM"]
         for city in df["CITY"].dropna().unique():
             if str(city).lower() in q:
                 hits = df[df["CITY"].str.lower() == str(city).lower()]
-                cols = [c for c in ["CLNT_NAME","STN_NAME","SERVICE","FREQ","CITY"] if c in hits.columns]
+                allowed = PUBLIC_SAFE if role == "public" else PUBLIC_SAFE + OFFICER_EXTRA
+                cols = [c for c in allowed if c in hits.columns]
                 parts.append(f"Izin di {city} ({len(hits):,} entri):\n" +
                     hits[cols].head(10).to_string(index=False))
                 break
