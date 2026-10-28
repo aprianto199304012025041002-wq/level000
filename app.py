@@ -1,6 +1,7 @@
 """PAIDI-INSIGHT — Streamlit app: dua peran, multi-model, MySQL/CSV."""
 import streamlit as st
 
+import analyst
 import auth
 import db
 import llm
@@ -155,7 +156,12 @@ if user_input:
         with st.spinner("Menganalisis..."):
             try:
                 df = df_main
-                context = rag.retrieve(user_input, df, k=5)
+                # Coba konteks analitik dulu (untuk query agregasi)
+                context = analyst.build_context(user_input, df, role)
+                # Kalau tidak ada, fallback ke BM25
+                if not context:
+                    context = rag.retrieve(user_input, df, k=5)
+                # Kalau masih kosong, pakai ringkasan dataset
                 if not context:
                     context = db.summary(role)
                 messages = prompts.build_messages(user_input, context, role)
