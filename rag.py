@@ -1,65 +1,59 @@
-"""RAG ringan tanpa dependensi tambahan: BM25 di atas file .txt/.md di folder data/.
-
-Cara pakai: taruh dokumen di data/, lalu retrieve(query) mengembalikan potongan teks
-paling relevan. Kalau data/ kosong, hasilnya string kosong (aplikasi tetap jalan).
-"""
+"""BM25 di atas dataframe yang sudah difilter per peran."""
 import math
 import re
 from collections import Counter
 from functools import lru_cache
-from pathlib import Path
 
-DATA_DIR = Path(__file__).parent / "data"
-CHUNK_WORDS = 120
-OVERLAP_WORDS = 20
+import pandas as pd
 
 
 def _tokenize(text: str) -> list[str]:
-    return re.findall(r"\w+", text.lower())
+    return re.findall(r"\w+", str(text).lower())
 
 
-def _chunk(text: str) -> list[str]:
-    words = text.split()
-    step = CHUNK_WORDS - OVERLAP_WORDS
-    return [" ".join(words[i:i + CHUNK_WORDS]) for i in range(0, max(len(words), 1), step) if words[i:i + CHUNK_WORDS]]
+def _build_corpus(df: pd.DataFrame) -> list[tuple[str, list[str]]]:
+    """Gabungkan setiap baris menjadi satu dokumen teks."""
+    docs = []
+    for _, row in df.iterrows():
+        text = " ".join(str(v) for v in row.values if pd.notna(v))
+        docs.append((text, _tokenize(text)))
+    return docs
 
 
-@lru_cache(maxsize=1)
-def _index():
-    chunks, sources = [], []
-    for path in sorted(DATA_DIR.glob("**/*")):
-        if path.suffix.lower() in {".txt", ".md"} and path.is_file():
-            for c in _chunk(path.read_text(encoding="utf-8", errors="ignore")):
-                chunks.append(c)
-                sources.append(path.name)
-    tokens = [_tokenize(c) for c in chunks]
-    df = Counter(t for toks in tokens for t in set(toks))
-    avg_len = (sum(len(t) for t in tokens) / len(tokens)) if tokens else 0
-    return chunks, sources, tokens, df, avg_len
-
-
-def search(query: str, k: int = 3, k1: float = 1.5, b: float = 0.75) -> list[tuple[str, str, float]]:
-    """Kembalikan [(sumber, potongan, skor)] urut skor tertinggi."""
-    chunks, sources, tokens, df, avg_len = _index()
-    if not chunks:
-        return []
+def search(query: str, df: pd.DataFrame, k: int = 5,
+           k1: float = 1.5, b: float = 0.75) -> pd.DataFrame:
+    """Kembalikan k baris paling relevan dari df."""
+    corpus = _build_corpus(df)
     q = _tokenize(query)
-    n = len(chunks)
-    scored = []
-    for i, toks in enumerate(tokens):
+    n = len(corpus)
+    if n == 0 or not q:
+        return df.head(0)
+
+    df_freq = Counter(t for _, toks in corpus for t in set(toks))
+    avg_len = sum(len(toks) for _, toks in corpus) / n
+
+    scores = []
+    for _, toks in corpus:
         tf = Counter(toks)
         score = 0.0
         for term in q:
             if term not in tf:
                 continue
-            idf = math.log(1 + (n - df[term] + 0.5) / (df[term] + 0.5))
-            score += idf * tf[term] * (k1 + 1) / (tf[term] + k1 * (1 - b + b * len(toks) / avg_len))
-        if score > 0:
-            scored.append((sources[i], chunks[i], score))
-    return sorted(scored, key=lambda x: x[2], reverse=True)[:k]
+            idf = math.log(1 + (n - df_freq[term] + 0.5) / (df_freq[term] + 0.5))
+            score += idf * tf[term] * (k1 + 1) / (
+                tf[term] + k1 * (1 - b + b * len(toks) / avg_len)
+            )
+        scores.append(score)
+
+    df = df.copy()
+    df["_score"] = scores
+    result = df[df["_score"] > 0].nlargest(k, "_score").drop(columns=["_score"])
+    return result
 
 
-def retrieve(query: str, k: int = 3) -> str:
+def retrieve(query: str, df: pd.DataFrame, k: int = 5) -> str:
     """Konteks siap tempel ke prompt."""
-    hits = search(query, k)
-    return "\n\n".join(f"[{src}] {text}" for src, text, _ in hits)
+    hits = search(query, df, k)
+    if hits.empty:
+        return ""
+    return hits.to_string(index=False)
