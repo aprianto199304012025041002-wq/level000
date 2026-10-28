@@ -1,4 +1,4 @@
-"""Koneksi MySQL Hostinger. Versi 2. Fallback ke CSV jika MySQL tidak tersedia."""
+"""Koneksi MySQL Hostinger. Versi 3. Fallback ke CSV jika MySQL tidak tersedia."""
 import functools
 import os
 from pathlib import Path
@@ -14,6 +14,8 @@ PUBLIC_COLS = [
     "SERVICE", "SUBSERVICE", "STN_NAME", "STN_ADDR",
     "CITY", "DISTRICT", "PROVINCE", "VILLAGE", "CLNT_NAME",
 ]
+
+_last_mysql_error: str = ""
 
 
 def _secret(name: str, default: str | None = None) -> str | None:
@@ -31,13 +33,19 @@ def _mysql_config() -> dict | None:
     host = _secret("MYSQL_HOST")
     user = _secret("MYSQL_USER")
     pwd  = _secret("MYSQL_PASSWORD")
-    db   = _secret("MYSQL_DB")
-    if all([host, user, pwd, db]):
-        return {"host": host, "user": user, "password": pwd, "database": db, "port": 3306}
+    dbname = _secret("MYSQL_DB")
+    if all([host, user, pwd, dbname]):
+        return {"host": host, "user": user, "password": pwd,
+                "database": dbname, "port": 3306}
     return None
 
 
-_last_mysql_error: str = ""
+def _normalize(df: pd.DataFrame) -> pd.DataFrame:
+    """Normalkan nama kolom ke UPPERCASE dan buang kolom 'ID' jika ada."""
+    df.columns = [c.strip().upper() for c in df.columns]
+    if "ID" in df.columns:
+        df = df.drop(columns=["ID"])
+    return df
 
 
 def _load_from_mysql(role: str) -> pd.DataFrame | None:
@@ -49,30 +57,27 @@ def _load_from_mysql(role: str) -> pd.DataFrame | None:
     try:
         import pymysql
         conn = pymysql.connect(**cfg, connect_timeout=8)
-        if role == "public":
-            cols = ", ".join(PUBLIC_COLS)
-            df = pd.read_sql(f"SELECT {cols} FROM isr LIMIT 20000", conn)
-        else:
-            df = pd.read_sql("SELECT * FROM isr LIMIT 20000", conn)
+        # Pakai SELECT * lalu filter kolom di Python
+        # supaya tidak bergantung pada case nama kolom di SQL
+        df = pd.read_sql("SELECT * FROM isr LIMIT 20000", conn)
         conn.close()
+        df = _normalize(df)
+        if role == "public":
+            available = [c for c in PUBLIC_COLS if c in df.columns]
+            df = df[available].copy()
         _last_mysql_error = ""
-        # Normalisasi nama kolom ke UPPERCASE supaya konsisten dengan CSV
-        df.columns = [c.strip().upper() for c in df.columns]
         return df
     except Exception as e:
         _last_mysql_error = str(e)
         return None
 
 
-def last_mysql_error() -> str:
-    return _last_mysql_error
-
-
 @functools.lru_cache(maxsize=2)
 def _load_csv(role: str) -> pd.DataFrame:
     df = pd.read_csv(CSV_PATH, low_memory=False)
     if role == "public":
-        return df[PUBLIC_COLS].copy()
+        available = [c for c in PUBLIC_COLS if c in df.columns]
+        return df[available].copy()
     return df.copy()
 
 
@@ -85,11 +90,14 @@ def load(role: str = "public") -> pd.DataFrame:
 
 
 def data_source(role: str = "public") -> str:
-    """Kembalikan keterangan sumber data aktif."""
     df = _load_from_mysql(role)
     if df is not None and not df.empty:
         return "MySQL"
     return "CSV lokal"
+
+
+def last_mysql_error() -> str:
+    return _last_mysql_error
 
 
 def summary(role: str = "public") -> str:
@@ -98,18 +106,21 @@ def summary(role: str = "public") -> str:
     lines = [
         f"Sumber: {src}. Dataset: {len(df):,} baris, {len(df.columns)} kolom.",
         f"Kolom: {', '.join(df.columns.tolist())}.",
-        f"Layanan: {df['SERVICE'].value_counts().to_dict()}",
     ]
+    if "SERVICE" in df.columns:
+        lines.append(f"Layanan: {df['SERVICE'].value_counts().to_dict()}")
     if role == "officer":
-        lines.append(f"Provinsi: {df['PROVINCE'].value_counts().to_dict()}")
-        lines.append(f"Status: {df['STATUS_SIMF'].value_counts().to_dict()}")
+        if "PROVINCE" in df.columns:
+            lines.append(f"Provinsi: {df['PROVINCE'].value_counts().to_dict()}")
+        if "STATUS_SIMF" in df.columns:
+            lines.append(f"Status: {df['STATUS_SIMF'].value_counts().to_dict()}")
     else:
-        lines.append(f"Kota (10 terbesar): {df['CITY'].value_counts().head(10).to_dict()}")
+        if "CITY" in df.columns:
+            lines.append(f"Kota (10 terbesar): {df['CITY'].value_counts().head(10).to_dict()}")
     return "\n".join(lines)
 
 
 def test_connection() -> tuple[bool, str]:
-    """Coba konek MySQL, kembalikan (sukses, pesan)."""
     cfg = _mysql_config()
     if not cfg:
         return False, "Secrets MySQL belum diisi (MYSQL_HOST/USER/PASSWORD/DB)."
@@ -117,13 +128,11 @@ def test_connection() -> tuple[bool, str]:
         import pymysql
         conn = pymysql.connect(**cfg, connect_timeout=8)
         cur = conn.cursor()
-        cur.execute("SHOW TABLES")
-        tables = [r[0] for r in cur.fetchall()]
         cur.execute("SELECT COUNT(*) FROM isr")
         count = cur.fetchone()[0]
         cur.execute("SHOW COLUMNS FROM isr")
-        cols = [r[0] for r in cur.fetchall()]
+        cols = [r[0].upper() for r in cur.fetchall()]
         conn.close()
-        return True, f"OK. Baris: {count:,}. Kolom ({len(cols)}): {cols}"
+        return True, f"OK. Baris: {count:,}. Kolom ({len(cols)}): {cols[:10]}..."
     except Exception as e:
         return False, str(e)
