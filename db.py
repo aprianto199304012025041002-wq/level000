@@ -56,6 +56,8 @@ def _load_from_mysql(role: str) -> pd.DataFrame | None:
             df = pd.read_sql("SELECT * FROM isr LIMIT 20000", conn)
         conn.close()
         _last_mysql_error = ""
+        # Normalisasi nama kolom ke UPPERCASE supaya konsisten dengan CSV
+        df.columns = [c.strip().upper() for c in df.columns]
         return df
     except Exception as e:
         _last_mysql_error = str(e)
@@ -120,6 +122,8 @@ def test_connection() -> tuple[bool, str]:
         cur.execute("SELECT COUNT(*) FROM isr")
         count = cur.fetchone()[0]
         conn.close()
-        return True, f"OK. Tabel: {tables}. Baris di isr: {count:,}"
+        cur.execute("SHOW COLUMNS FROM isr")
+        cols = [r[0] for r in cur.fetchall()]
+        return True, f"OK. Baris: {count:,}. Kolom: {cols[:10]}"
     except Exception as e:
         return False, str(e)
