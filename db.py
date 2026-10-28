@@ -1,4 +1,4 @@
-"""Koneksi MySQL Hostinger. Fallback ke CSV jika MySQL tidak tersedia."""
+"""Koneksi MySQL Hostinger. Versi 2. Fallback ke CSV jika MySQL tidak tersedia."""
 import functools
 import os
 from pathlib import Path
