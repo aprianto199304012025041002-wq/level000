@@ -52,8 +52,8 @@ if st.session_state.role is None:
             tgl     = str(tgl_row["TGL"] or "-")
             s_row   = db.execute(
                 "SELECT COUNT(*) AS total, "
-                "SUM(STR_TO_DATE(validity_date, '%d-%b-%y') >= STR_TO_DATE(tgl_query, '%d-%b-%y')) AS active, "
-                "SUM(STR_TO_DATE(validity_date, '%d-%b-%y') < STR_TO_DATE(tgl_query, '%d-%b-%y')) AS expired, "
+                "SUM(STR_TO_DATE(validity_date, '%%d-%%b-%%y') >= STR_TO_DATE(tgl_query, '%%d-%%b-%%y')) AS active, "
+                "SUM(STR_TO_DATE(validity_date, '%%d-%%b-%%y') < STR_TO_DATE(tgl_query, '%%d-%%b-%%y')) AS expired, "
                 "SUM(validity_date IS NULL OR validity_date = '') AS unknown "
                 "FROM isr"
             ).iloc[0]
