@@ -180,14 +180,18 @@ border-radius:50%;background:rgba(0,180,216,0.06)"></div>
     color:rgba(255,255,255,.4);text-transform:uppercase;margin-bottom:.4rem">Total Izin Stasiun Radio</div>
     <div class="pi-total-num" style="font-family:'Space Grotesk',sans-serif;font-size:3.2rem;
     font-weight:700;color:#fff;line-height:1;margin-bottom:.45rem">{total:,}</div>
-    <div style="font-size:.68rem;color:rgba(255,255,255,.55)" id="pi-clock">--:-- WIB</div>
+    <div style="font-size:.68rem;color:rgba(255,255,255,.55)" id="pi-clock">-- --- ---- · --:--:-- WIB</div>
     <script>
     (function(){{
         var months=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Ags','Sep','Okt','Nov','Des'];
+        var days=['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
         function tick(){{
-            var n=new Date(), h=(n.getUTCHours()+7)%24,
-                m=n.getUTCMinutes(), s=n.getUTCSeconds();
-            var str=n.getUTCDate()+' '+months[n.getUTCMonth()]+' '+n.getUTCFullYear()+
+            var n=new Date();
+            var jkt=new Date(n.getTime()+7*3600000);
+            var h=jkt.getUTCHours(), m=jkt.getUTCMinutes(), s=jkt.getUTCSeconds();
+            var d=jkt.getUTCDate(), mo=months[jkt.getUTCMonth()], y=jkt.getUTCFullYear();
+            var dy=days[jkt.getUTCDay()];
+            var str=dy+', '+String(d).padStart(2,'0')+' '+mo+' '+y+
                     ' &nbsp;·&nbsp; '+String(h).padStart(2,'0')+':'+
                     String(m).padStart(2,'0')+':'+String(s).padStart(2,'0')+' WIB';
             var el=document.getElementById('pi-clock');
