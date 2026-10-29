@@ -15,64 +15,120 @@ _LAYOUT = dict(
 )
 
 
+# Palet wilayah: biru-navy (cool)
+_PAL_WILAYAH = [
+    "#0D2B55","#1565C0","#1976D2","#1E88E5",
+    "#2196F3","#42A5F5","#64B5F6","#90CAF9",
+    "#0077B6","#023E8A",
+]
+# Palet service: teal-hijau (berbeda dari wilayah)
+_PAL_SERVICE = [
+    "#00695C","#00796B","#00897B","#009688",
+    "#26A69A","#4DB6AC","#006064","#00838F",
+    "#0097A7","#00ACC1",
+]
+
+
+def _total(values, ids, root_id="root"):
+    return next(v for i, v in zip(ids, values) if i == root_id)
+
+
 def sunburst_wilayah(df: pd.DataFrame) -> go.Figure:
     ids, labels, parents, values = ["root"], ["Wilayah"], [""], [int(df["CNT"].sum())]
-    for _, row in df.groupby("PROVINCE")["CNT"].sum().reset_index().iterrows():
+    tot = int(df["CNT"].sum())
+
+    provs = df.groupby("PROVINCE")["CNT"].sum().reset_index()
+    for _, row in provs.iterrows():
         p = str(row["PROVINCE"])
         short = "DIY" if "YOGYA" in p.upper() else "JATENG"
         ids.append(f"p_{p}"); labels.append(short)
         parents.append("root"); values.append(int(row["CNT"]))
+
     for _, row in df.iterrows():
         p = str(row["PROVINCE"]); c = str(row["CITY"])
         ids.append(f"c_{p}_{c}"); labels.append(c.title())
         parents.append(f"p_{p}"); values.append(int(row["CNT"]))
+
+    # Warna per node
+    n = len(ids)
+    node_colors = []
+    for i, pid in enumerate(parents):
+        if pid == "":          node_colors.append("#0D2B55")   # root
+        elif pid == "root":    node_colors.append(_PAL_WILAYAH[i % 4])
+        else:                  node_colors.append(_PAL_WILAYAH[4 + (i % 6)])
+
+    # Persentase di label
+    pct = [f"{v/tot*100:.1f}%" if p == "root" and pid != "" else "" 
+           for v, pid in zip(values, parents)]
+    customdata = [f"{v/tot*100:.1f}" for v in values]
+
     fig = go.Figure(go.Sunburst(
         ids=ids, labels=labels, parents=parents, values=values,
         branchvalues="total",
-        hovertemplate="<b>%{label}</b><br>%{value:,} izin<extra></extra>",
+        customdata=customdata,
+        texttemplate="%{label}<br><b>%{customdata}%</b>",
+        hovertemplate="<b>%{label}</b><br>%{value:,} izin · %{customdata}%<extra></extra>",
         insidetextorientation="radial",
-        marker=dict(colorscale=[[0,SIGNAL],[0.5,BLUE],[1,NAVY]],
-                    line=dict(color="white", width=1.5)),
+        textfont=dict(size=10),
+        marker=dict(colors=node_colors, line=dict(color="white", width=1.5)),
         maxdepth=2,
+        leaf=dict(opacity=0.85),
     ))
-    fig.update_layout(**_LAYOUT, height=280,
-        title=dict(text="Sebaran Wilayah", font=dict(size=12,color=NAVY),
-                   x=0.5, xanchor="center", y=0.97),
-        annotations=[dict(text="Klik provinsi untuk detail kab/kota",
-            x=0.5, y=-0.03, showarrow=False,
-            font=dict(size=9,color="#94A3B8"), xref="paper", yref="paper")])
+    fig.update_layout(**_LAYOUT, height=320,
+        title=dict(text="Sebaran Wilayah", font=dict(size=12, color=NAVY),
+                   x=0.5, xanchor="center", y=0.98),
+        annotations=[dict(text="Klik provinsi → detail kab/kota",
+            x=0.5, y=-0.02, showarrow=False,
+            font=dict(size=9, color="#94A3B8"), xref="paper", yref="paper")])
     return fig
 
 
 def sunburst_service(df: pd.DataFrame) -> go.Figure:
     ids, labels, parents, values = ["root"], ["Layanan"], [""], [int(df["CNT"].sum())]
-    for _, row in df.groupby("SERVICE")["CNT"].sum().reset_index().iterrows():
+    tot = int(df["CNT"].sum())
+
+    svcs = df.groupby("SERVICE")["CNT"].sum().reset_index()
+    for _, row in svcs.iterrows():
         s = str(row["SERVICE"])
         short = (s.replace("Service","Svc").replace("Land Mobile","LM")
                   .replace("(public)","Pub").replace("(private)","Prv")
                   .replace("Aeronautical","Aero").replace("Other Services","Other"))
         ids.append(f"s_{s}"); labels.append(short)
         parents.append("root"); values.append(int(row["CNT"]))
+
     for _, row in df.iterrows():
         s = str(row["SERVICE"])
         sub = str(row["SUBSERVICE"]) if pd.notna(row.get("SUBSERVICE")) else "Lainnya"
         ids.append(f"b_{s}_{sub}"); labels.append(sub)
         parents.append(f"s_{s}"); values.append(int(row["CNT"]))
+
+    n = len(ids)
+    node_colors = []
+    for i, pid in enumerate(parents):
+        if pid == "":       node_colors.append("#00695C")
+        elif pid == "root": node_colors.append(_PAL_SERVICE[i % 5])
+        else:               node_colors.append(_PAL_SERVICE[5 + (i % 5)])
+
+    customdata = [f"{v/tot*100:.1f}" for v in values]
+
     fig = go.Figure(go.Sunburst(
         ids=ids, labels=labels, parents=parents, values=values,
         branchvalues="total",
-        hovertemplate="<b>%{label}</b><br>%{value:,} izin<extra></extra>",
+        customdata=customdata,
+        texttemplate="%{label}<br><b>%{customdata}%</b>",
+        hovertemplate="<b>%{label}</b><br>%{value:,} izin · %{customdata}%<extra></extra>",
         insidetextorientation="radial",
-        marker=dict(colorscale=[[0,"#48CAE4"],[0.4,SIGNAL],[0.7,BLUE],[1,NAVY]],
-                    line=dict(color="white", width=1.5)),
+        textfont=dict(size=10),
+        marker=dict(colors=node_colors, line=dict(color="white", width=1.5)),
         maxdepth=2,
+        leaf=dict(opacity=0.85),
     ))
-    fig.update_layout(**_LAYOUT, height=280,
-        title=dict(text="Jenis Layanan", font=dict(size=12,color=NAVY),
-                   x=0.5, xanchor="center", y=0.97),
-        annotations=[dict(text="Klik layanan untuk detail sub-layanan",
-            x=0.5, y=-0.03, showarrow=False,
-            font=dict(size=9,color="#94A3B8"), xref="paper", yref="paper")])
+    fig.update_layout(**_LAYOUT, height=320,
+        title=dict(text="Jenis Layanan", font=dict(size=12, color=NAVY),
+                   x=0.5, xanchor="center", y=0.98),
+        annotations=[dict(text="Klik layanan → detail sub-layanan",
+            x=0.5, y=-0.02, showarrow=False,
+            font=dict(size=9, color="#94A3B8"), xref="paper", yref="paper")])
     return fig
 
 

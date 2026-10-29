@@ -111,17 +111,19 @@ html, body, [class*="css"] { font-family: 'Inter', sans-serif !important; }
     line-height: 1.5;
 }
 
-/* ── Plotly chart container responsive ── */
-@media (max-width: 479px) {
-    [data-testid="stPlotlyChart"] > div {
-        height: 220px !important;
-        min-height: 220px !important;
-    }
-    .js-plotly-plot, .plot-container { height: 220px !important; }
+/* ── Plotly chart container: jangan dipotong ── */
+[data-testid="stPlotlyChart"] {
+    overflow: visible !important;
 }
-@media (min-width: 480px) and (max-width: 767px) {
-    [data-testid="stPlotlyChart"] > div { height: 250px !important; }
-    .js-plotly-plot, .plot-container { height: 250px !important; }
+[data-testid="stPlotlyChart"] > div {
+    overflow: visible !important;
+}
+/* Bento panel: biarkan chart berkembang */
+[data-testid="stVerticalBlockBorderWrapper"] {
+    overflow: visible !important;
+}
+@media (max-width: 479px) {
+    .block-container { max-width: 100% !important; }
 }
 
 /* ── Frekuensi bar ── */
