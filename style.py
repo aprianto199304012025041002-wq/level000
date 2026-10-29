@@ -97,10 +97,11 @@ html, body, [class*="css"] { font-family: 'Inter', sans-serif !important; }
 }
 .pi-logo {
     font-family: 'Space Grotesk', sans-serif;
-    font-size: 1.35rem;
-    font-weight: 700;
+    font-size: 1.55rem;
+    font-weight: 800;
     color: #fff;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.03em;
+    line-height: 1;
 }
 .pi-logo span { color: var(--signal); }
 .pi-meta {
@@ -335,15 +336,19 @@ html, body, [class*="css"] { font-family: 'Inter', sans-serif !important; }
 
 HEADER_HTML = """
 <div class="pi-header">
-    <div>
-        <div class="pi-logo">PAIDI<span>·</span>INSIGHT</div>
-        <div style="font-size:0.7rem;color:rgba(255,255,255,0.5);margin-top:2px">
-            Platform AI Spektrum Frekuensi Radio
+    <div style="flex:1;min-width:0">
+        <div class="pi-logo">
+            <span style="color:#fff;font-weight:800;letter-spacing:-.03em">PAIDI</span><span style="color:#00B4D8;font-weight:300;margin:0 1px">·</span><span style="background:linear-gradient(90deg,#00B4D8,#48CAE4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-weight:700;letter-spacing:.04em">INSIGHT</span>
+        </div>
+        <div style="font-size:0.68rem;color:rgba(0,180,216,0.75);margin-top:3px;
+                    font-weight:500;letter-spacing:.02em">
+            Platform Analisa Infrastruktur Digital Indonesia
         </div>
     </div>
-    <div class="pi-meta">
-        Balmon Kelas I Yogyakarta<br>
-        Ditjen SDPPI · Komdigi RI
+    <div class="pi-meta" style="text-align:right;line-height:1.6;flex-shrink:0;max-width:55%">
+        <span style="color:rgba(255,255,255,0.85);font-size:0.62rem;font-weight:500">Balai Monitor Spektrum Frekuensi Radio dan Infrastruktur Digital Kelas I Yogyakarta</span><br>
+        <span style="color:rgba(255,255,255,0.5);font-size:0.58rem">Direktorat Jenderal Infrastruktur Digital</span><br>
+        <span style="color:rgba(255,255,255,0.5);font-size:0.58rem">Kementerian Komunikasi dan Digital</span>
     </div>
 </div>
 <div class="freq-bar"></div>

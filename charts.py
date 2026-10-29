@@ -76,26 +76,37 @@ def sunburst_service(df: pd.DataFrame) -> go.Figure:
     return fig
 
 
-def card_total_html(total: int, active: int, expired: int) -> str:
+def card_total_html(total: int, active: int, expired: int, tgl: str = "-") -> str:
     pa = round(active/total*100) if total else 0
     pe = round(expired/total*100) if total else 0
     return f"""
-<div class="pi-total-wrap" style="background:linear-gradient(135deg,#0D2B55 0%,#1A4A8A 100%);
-border-radius:14px;padding:1.3rem 1.5rem;min-height:160px;
-position:relative;overflow:hidden;">
-<div style="position:absolute;right:-20px;top:-20px;width:130px;height:130px;
-border-radius:50%;background:rgba(0,180,216,0.14)"></div>
-<div style="font-size:.62rem;font-weight:600;letter-spacing:.08em;
-color:rgba(255,255,255,.45);text-transform:uppercase;margin-bottom:.35rem">Total Izin Spektrum</div>
-<div class="pi-total-num" style="font-family:'Space Grotesk',sans-serif;font-size:3rem;font-weight:700;
-color:#fff;line-height:1;margin-bottom:.45rem">{total:,}</div>
-<div class="pi-total-sub" style="font-size:.7rem;color:rgba(255,255,255,.5);margin-bottom:.65rem">
-DIY &amp; Jawa Tengah · Balmon Kelas I Yogyakarta</div>
-<div style="display:flex;gap:7px;flex-wrap:wrap">
-<span style="background:rgba(22,163,74,.28);color:#86EFAC;font-size:.63rem;
-font-weight:600;padding:3px 8px;border-radius:20px">✓ {active:,} aktif ({pa}%)</span>
-<span style="background:rgba(220,38,38,.28);color:#FCA5A5;font-size:.63rem;
-font-weight:600;padding:3px 8px;border-radius:20px">✕ {expired:,} expired ({pe}%)</span>
+<div class="pi-total-wrap" style="background:linear-gradient(135deg,#0D2B55 0%,#1565C0 60%,#1A4A8A 100%);
+border-radius:14px;padding:1.4rem 1.8rem;position:relative;overflow:hidden;">
+<div style="position:absolute;right:-30px;top:-30px;width:180px;height:180px;
+border-radius:50%;background:rgba(0,180,216,0.10)"></div>
+<div style="position:absolute;right:60px;bottom:-20px;width:100px;height:100px;
+border-radius:50%;background:rgba(0,180,216,0.06)"></div>
+<div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:1rem">
+  <div>
+    <div style="font-size:.62rem;font-weight:600;letter-spacing:.1em;
+    color:rgba(255,255,255,.4);text-transform:uppercase;margin-bottom:.4rem">Total Izin Spektrum</div>
+    <div class="pi-total-num" style="font-family:'Space Grotesk',sans-serif;font-size:3.2rem;
+    font-weight:700;color:#fff;line-height:1;margin-bottom:.5rem">{total:,}</div>
+    <div style="display:flex;gap:7px;flex-wrap:wrap">
+      <span style="background:rgba(22,163,74,.28);color:#86EFAC;font-size:.63rem;
+      font-weight:600;padding:3px 10px;border-radius:20px">✓ {active:,} aktif ({pa}%)</span>
+      <span style="background:rgba(220,38,38,.28);color:#FCA5A5;font-size:.63rem;
+      font-weight:600;padding:3px 10px;border-radius:20px">✕ {expired:,} exp ({pe}%)</span>
+    </div>
+  </div>
+  <div style="text-align:right">
+    <div style="font-size:.6rem;font-weight:600;letter-spacing:.1em;
+    color:rgba(255,255,255,.4);text-transform:uppercase;margin-bottom:.3rem">Data per</div>
+    <div style="font-family:'Space Grotesk',sans-serif;font-size:1.4rem;
+    font-weight:700;color:#00B4D8;line-height:1">{tgl}</div>
+    <div style="font-size:.62rem;color:rgba(255,255,255,.4);margin-top:.3rem">
+    DIY &amp; Jawa Tengah</div>
+  </div>
 </div></div>"""
 
 

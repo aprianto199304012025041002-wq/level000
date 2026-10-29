@@ -82,17 +82,9 @@ if st.session_state.role is None:
         n_kota = df_wil["CITY"].nunique()
         src = db.data_source()
 
-        # ── Baris 1: Total + Info dataset ──────────────────────────────
-        r1c1, r1c2 = st.columns(2, gap="small")
-        with r1c1:
-            with st.container(border=False):
-                st.markdown(charts.card_total_html(total, active, expired),
-                            unsafe_allow_html=True)
-        with r1c2:
-            with st.container(border=True):
-                st.markdown(charts.card_date_inner_html(tgl, src, n_prov, n_kota),
-                            unsafe_allow_html=True)
-
+        # ── Baris 1: Total + Tanggal (satu card full width) ────────────
+        st.markdown(charts.card_total_html(total, active, expired, tgl),
+                    unsafe_allow_html=True)
         st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
 
         # ── Baris 2: Sunburst Wilayah + Sunburst Service ────────────────
