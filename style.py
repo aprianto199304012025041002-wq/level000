@@ -4,6 +4,59 @@ CSS = """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
 
+/* ── Responsive breakpoints ── */
+
+/* Mobile portrait */
+@media (max-width: 479px) {
+    .block-container { padding: 0.7rem 0.7rem 2rem !important; }
+    .pi-header { padding: 0.8rem 1rem; border-radius: 10px; }
+    .pi-logo { font-size: 1.05rem; }
+    .pi-meta { font-size: 0.58rem; }
+    .freq-bar { margin-bottom: 0.7rem; }
+
+    /* Stack columns */
+    [data-testid="stHorizontalBlock"] {
+        flex-direction: column !important;
+        gap: 0.5rem !important;
+    }
+    [data-testid="stColumn"] {
+        width: 100% !important;
+        flex: 0 0 100% !important;
+        min-width: 100% !important;
+    }
+
+    /* Bento total card: angka lebih kecil */
+    .pi-total-num { font-size: 2.2rem !important; }
+    .pi-total-wrap { padding: 1rem !important; border-radius: 10px !important; }
+    .pi-total-sub { font-size: 0.65rem !important; }
+    .pi-info-grid { grid-template-columns: 1fr 1fr !important; gap: .5rem !important; }
+    .pi-info-val { font-size: 1rem !important; }
+
+    /* Chat */
+    .chat-header { padding: 0.5rem 0.7rem; border-radius: 8px; }
+    .chat-header-title { font-size: 0.82rem; }
+    .welcome-box { padding: 1.5rem 0.5rem; }
+    .welcome-box .wi { font-size: 1.8rem; }
+    .welcome-box h3 { font-size: 0.9rem; }
+    .chip { font-size: 0.7rem; padding: 4px 9px; }
+}
+
+/* Mobile landscape & tablet */
+@media (min-width: 480px) and (max-width: 767px) {
+    .block-container { padding: 0.9rem 1rem 2rem !important; }
+    .pi-logo { font-size: 1.2rem; }
+    .pi-total-num { font-size: 2.5rem !important; }
+
+    /* Biarkan 2 kolom tapi lebih rapat */
+    [data-testid="stHorizontalBlock"] { gap: 0.6rem !important; }
+}
+
+/* Tablet besar & desktop */
+@media (min-width: 768px) {
+    .block-container { max-width: 960px !important; }
+    .pi-total-num { font-size: 3rem; }
+}
+
 /* ── Reset ── */
 html, body, [class*="css"] { font-family: 'Inter', sans-serif !important; }
 #MainMenu, footer, header { visibility: hidden; }
@@ -63,6 +116,19 @@ html, body, [class*="css"] { font-family: 'Inter', sans-serif !important; }
     color: rgba(255,255,255,0.55);
     text-align: right;
     line-height: 1.5;
+}
+
+/* ── Plotly chart container responsive ── */
+@media (max-width: 479px) {
+    [data-testid="stPlotlyChart"] > div {
+        height: 220px !important;
+        min-height: 220px !important;
+    }
+    .js-plotly-plot, .plot-container { height: 220px !important; }
+}
+@media (min-width: 480px) and (max-width: 767px) {
+    [data-testid="stPlotlyChart"] > div { height: 250px !important; }
+    .js-plotly-plot, .plot-container { height: 250px !important; }
 }
 
 /* ── Frekuensi bar ── */
