@@ -334,6 +334,24 @@ html, body, [class*="css"] { font-family: 'Inter', sans-serif !important; }
 }
 .chip:hover { border-color: var(--signal); color: var(--signal); }
 </style>
+<script>
+(function() {
+    var months=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Ags','Sep','Okt','Nov','Des'];
+    var days=['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+    function tick() {
+        var n=new Date(), jkt=new Date(n.getTime()+7*3600000);
+        var h=jkt.getUTCHours(), m=jkt.getUTCMinutes(), s=jkt.getUTCSeconds();
+        var d=jkt.getUTCDate(), mo=months[jkt.getUTCMonth()], y=jkt.getUTCFullYear();
+        var dy=days[jkt.getUTCDay()];
+        var str=dy+', '+String(d).padStart(2,'0')+' '+mo+' '+y+
+                ' · '+String(h).padStart(2,'0')+':'+
+                String(m).padStart(2,'0')+':'+String(s).padStart(2,'0')+' WIB';
+        var el=document.getElementById('pi-clock');
+        if(el){ el.textContent=str; } else { setTimeout(tick,100); }
+    }
+    tick(); setInterval(tick,1000);
+})();
+</script>
 """
 
 HEADER_HTML = """
