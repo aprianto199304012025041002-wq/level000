@@ -82,30 +82,33 @@ if st.session_state.role is None:
         n_kota = df_wil["CITY"].nunique()
         src = db.data_source()
 
-        # Baris 1: Total + Info dataset
-        r1c1, r1c2 = st.columns(2)
+        # ── Baris 1: Total + Info dataset ──────────────────────────────
+        r1c1, r1c2 = st.columns(2, gap="small")
         with r1c1:
-            st.markdown(charts.card_total_html(total, active, expired),
-                        unsafe_allow_html=True)
+            with st.container(border=False):
+                st.markdown(charts.card_total_html(total, active, expired),
+                            unsafe_allow_html=True)
         with r1c2:
-            st.markdown(charts.card_date_html(tgl, src, n_prov, n_kota),
-                        unsafe_allow_html=True)
+            with st.container(border=True):
+                st.markdown(charts.card_date_inner_html(tgl, src, n_prov, n_kota),
+                            unsafe_allow_html=True)
 
-        st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
 
-        # Baris 2: Sunburst Wilayah + Sunburst Service
-        r2c1, r2c2 = st.columns(2)
+        # ── Baris 2: Sunburst Wilayah + Sunburst Service ────────────────
+        r2c1, r2c2 = st.columns(2, gap="small")
         with r2c1:
-            st.plotly_chart(charts.sunburst_wilayah(df_wil),
-                            use_container_width=True,
-                            config={"displayModeBar": False})
+            with st.container(border=True):
+                st.plotly_chart(charts.sunburst_wilayah(df_wil),
+                                use_container_width=True,
+                                config={"displayModeBar": False})
         with r2c2:
-            st.plotly_chart(charts.sunburst_service(df_svc),
-                            use_container_width=True,
-                            config={"displayModeBar": False})
+            with st.container(border=True):
+                st.plotly_chart(charts.sunburst_service(df_svc),
+                                use_container_width=True,
+                                config={"displayModeBar": False})
 
-        st.markdown("<hr style='border:none;border-top:1px solid #E2E8F0;margin:.6rem 0 1rem'>",
-                    unsafe_allow_html=True)
+        st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
 
     except Exception as _e:
         st.caption(f"Dashboard tidak tersedia: {_e}")

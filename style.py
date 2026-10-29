@@ -234,6 +234,14 @@ html, body, [class*="css"] { font-family: 'Inter', sans-serif !important; }
 .mode-officer { background: #DCFCE7; color: #15803D; }
 .mode-public  { background: #DBEAFE; color: #1D4ED8; }
 
+/* ── Container border Streamlit (bento panel) ── */
+[data-testid="stVerticalBlockBorderWrapper"] {
+    border-radius: 14px !important;
+    border-color: #E2E8F0 !important;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06) !important;
+    overflow: hidden;
+}
+
 /* ── Welcome message ── */
 .welcome-box {
     text-align: center;

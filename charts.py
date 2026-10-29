@@ -99,6 +99,36 @@ font-weight:600;padding:3px 8px;border-radius:20px">✕ {expired:,} expired ({pe
 </div></div>"""
 
 
+def card_date_inner_html(tgl: str, sumber: str, n_prov: int, n_kota: int) -> str:
+    """Konten info dataset tanpa card wrapper (untuk st.container border=True)."""
+    return f"""
+<div style="padding:.2rem .1rem">
+<div style="font-size:.62rem;font-weight:600;letter-spacing:.08em;
+color:#94A3B8;text-transform:uppercase;margin-bottom:.7rem">Informasi Dataset</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem">
+  <div>
+    <div style="font-size:.68rem;color:#64748B;margin-bottom:2px">Tanggal Query</div>
+    <div style="font-family:'Space Grotesk',sans-serif;font-size:1.1rem;
+    font-weight:700;color:#0D2B55">{tgl}</div>
+  </div>
+  <div>
+    <div style="font-size:.68rem;color:#64748B;margin-bottom:2px">Sumber</div>
+    <div style="font-family:'Space Grotesk',sans-serif;font-size:1.1rem;
+    font-weight:700;color:#1565C0">{sumber}</div>
+  </div>
+  <div>
+    <div style="font-size:.68rem;color:#64748B;margin-bottom:2px">Provinsi</div>
+    <div style="font-family:'Space Grotesk',sans-serif;font-size:1.4rem;
+    font-weight:700;color:#0D2B55">{n_prov}</div>
+  </div>
+  <div>
+    <div style="font-size:.68rem;color:#64748B;margin-bottom:2px">Kab/Kota</div>
+    <div style="font-family:'Space Grotesk',sans-serif;font-size:1.4rem;
+    font-weight:700;color:#0D2B55">{n_kota}</div>
+  </div>
+</div></div>"""
+
+
 def card_date_html(tgl: str, sumber: str, n_prov: int, n_kota: int) -> str:
     return f"""
 <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:14px;
