@@ -40,13 +40,13 @@ def sunburst_wilayah(df: pd.DataFrame) -> go.Figure:
     provs = df.groupby("PROVINCE")["CNT"].sum().reset_index()
     for _, row in provs.iterrows():
         p = str(row["PROVINCE"])
-        short = "DIY" if "YOGYA" in p.upper() else "JATENG"
+        short = "D.I. YOGYAKARTA" if "YOGYA" in p.upper() else "JAWA TENGAH"
         ids.append(f"p_{p}"); labels.append(short)
         parents.append("root"); values.append(int(row["CNT"]))
 
     for _, row in df.iterrows():
         p = str(row["PROVINCE"]); c = str(row["CITY"])
-        ids.append(f"c_{p}_{c}"); labels.append(c.title())
+        ids.append(f"c_{p}_{c}"); labels.append(c)
         parents.append(f"p_{p}"); values.append(int(row["CNT"]))
 
     # Warna per node
@@ -84,51 +84,80 @@ def sunburst_wilayah(df: pd.DataFrame) -> go.Figure:
 
 
 def sunburst_service(df: pd.DataFrame) -> go.Figure:
-    ids, labels, parents, values = ["root"], ["Layanan"], [""], [int(df["CNT"].sum())]
-    tot = int(df["CNT"].sum())
+    """
+    Pie chart service level-1: label luar + pointer panah untuk slice kecil.
+    Klik slice → drill-down sub-service di chart kedua (dihandle di app.py).
+    """
+    svcs = df.groupby("SERVICE")["CNT"].sum().reset_index().sort_values("CNT", ascending=False)
+    tot  = int(svcs["CNT"].sum())
+    lbls = svcs["SERVICE"].tolist()
+    vals = svcs["CNT"].tolist()
+    pcts = [v/tot*100 for v in vals]
 
-    svcs = df.groupby("SERVICE")["CNT"].sum().reset_index()
-    for _, row in svcs.iterrows():
-        s = str(row["SERVICE"])
-        short = (s.replace("Service","Svc").replace("Land Mobile","LM")
-                  .replace("(public)","Pub").replace("(private)","Prv")
-                  .replace("Aeronautical","Aero").replace("Other Services","Other"))
-        ids.append(f"s_{s}"); labels.append(short)
-        parents.append("root"); values.append(int(row["CNT"]))
+    # Pull slice kecil (<3%) ke luar supaya label keliatan
+    pulls = [0.07 if p < 3 else 0.02 for p in pcts]
 
-    for _, row in df.iterrows():
-        s = str(row["SERVICE"])
-        sub = str(row["SUBSERVICE"]) if pd.notna(row.get("SUBSERVICE")) else "Lainnya"
-        ids.append(f"b_{s}_{sub}"); labels.append(sub)
-        parents.append(f"s_{s}"); values.append(int(row["CNT"]))
+    # Warna per service
+    colors = [_PAL_SERVICE[i % len(_PAL_SERVICE)] for i in range(len(lbls))]
 
-    n = len(ids)
-    node_colors = []
-    for i, pid in enumerate(parents):
-        if pid == "":       node_colors.append("#00695C")
-        elif pid == "root": node_colors.append(_PAL_SERVICE[i % 5])
-        else:               node_colors.append(_PAL_SERVICE[5 + (i % 5)])
-
-    customdata = [f"{v/tot*100:.1f}" for v in values]
-
-    fig = go.Figure(go.Sunburst(
-        ids=ids, labels=labels, parents=parents, values=values,
-        branchvalues="total",
-        customdata=customdata,
-        texttemplate="%{label}<br><b>%{customdata}%</b>",
-        hovertemplate="<b>%{label}</b><br>%{value:,} izin · %{customdata}%<extra></extra>",
-        insidetextorientation="radial",
-        textfont=dict(size=10),
-        marker=dict(colors=node_colors, line=dict(color="white", width=1.5)),
-        maxdepth=2,
-        leaf=dict(opacity=0.85),
+    fig = go.Figure(go.Pie(
+        labels=lbls,
+        values=vals,
+        pull=pulls,
+        marker=dict(colors=colors, line=dict(color="white", width=2)),
+        textposition="outside",
+        textinfo="label+percent",
+        texttemplate="<b>%{label}</b><br>%{percent:.1%}",
+        textfont=dict(size=10, family="Inter, sans-serif"),
+        hovertemplate="<b>%{label}</b><br>%{value:,} izin · %{percent:.1%}<extra></extra>",
+        insidetextorientation="auto",
+        rotation=45,
     ))
-    fig.update_layout(**_LAYOUT, height=320,
+    fig.update_layout(
+        **{k: v for k, v in _LAYOUT.items() if k != "margin"},
+        margin=dict(t=40, b=60, l=60, r=60),
+        height=340,
+        showlegend=False,
         title=dict(text="Jenis Layanan", font=dict(size=12, color=NAVY),
-                   x=0.5, xanchor="center", y=0.98),
-        annotations=[dict(text="Klik layanan → detail sub-layanan",
-            x=0.5, y=-0.09, showarrow=False,
-            font=dict(size=9, color="#94A3B8"), xref="paper", yref="paper")])
+                   x=0.5, xanchor="center", y=0.97),
+        annotations=[dict(
+            text="Hover untuk detail · klik untuk filter",
+            x=0.5, y=-0.12, showarrow=False,
+            font=dict(size=9, color="#94A3B8"), xref="paper", yref="paper"
+        )]
+    )
+    return fig
+
+
+def pie_subservice(df: pd.DataFrame, service: str) -> go.Figure:
+    """Pie sub-service untuk service tertentu (dipakai saat user klik)."""
+    sub = df[df["SERVICE"] == service].groupby("SUBSERVICE")["CNT"].sum().reset_index()
+    if sub.empty:
+        return None
+    tot  = int(sub["CNT"].sum())
+    lbls = sub["SUBSERVICE"].fillna("Lainnya").tolist()
+    vals = sub["CNT"].tolist()
+    pcts = [v/tot*100 for v in vals]
+    pulls = [0.07 if p < 5 else 0.02 for p in pcts]
+    colors = [_PAL_SERVICE[i % len(_PAL_SERVICE)] for i in range(len(lbls))]
+    fig = go.Figure(go.Pie(
+        labels=lbls, values=vals, pull=pulls,
+        marker=dict(colors=colors, line=dict(color="white", width=2)),
+        textposition="outside",
+        textinfo="label+percent",
+        texttemplate="<b>%{label}</b><br>%{percent:.1%}",
+        textfont=dict(size=10, family="Inter, sans-serif"),
+        hovertemplate="<b>%{label}</b><br>%{value:,} izin · %{percent:.1%}<extra></extra>",
+        rotation=45,
+    ))
+    fig.update_layout(
+        **{k: v for k, v in _LAYOUT.items() if k != "margin"},
+        margin=dict(t=40, b=60, l=60, r=60),
+        height=300,
+        showlegend=False,
+        title=dict(text=f"Sub-layanan: {service}",
+                   font=dict(size=11, color=NAVY), x=0.5, xanchor="center", y=0.97),
+    )
     return fig
 
 
@@ -137,8 +166,7 @@ def card_total_html(total: int, active: int, expired: int, tgl: str = "-") -> st
     pe = round(expired/total*100) if total else 0
     import datetime as _dt
     tz_jkt = _dt.timezone(_dt.timedelta(hours=7))
-    now    = _dt.datetime.now(tz_jkt)
-    wib    = now.strftime("%d %b %Y · %H:%M WIB")
+    tgl_str = tgl  # tanggal dari DB tetap statis
     return f"""
 <div class="pi-total-wrap" style="background:linear-gradient(135deg,#0D2B55 0%,#1565C0 60%,#1A4A8A 100%);
 border-radius:14px;padding:1.4rem 1.8rem;position:relative;overflow:hidden;">
@@ -149,10 +177,25 @@ border-radius:50%;background:rgba(0,180,216,0.06)"></div>
 <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:1rem">
   <div>
     <div style="font-size:.62rem;font-weight:600;letter-spacing:.1em;
-    color:rgba(255,255,255,.4);text-transform:uppercase;margin-bottom:.4rem">Total Izin Spektrum</div>
+    color:rgba(255,255,255,.4);text-transform:uppercase;margin-bottom:.4rem">Total Izin Stasiun Radio</div>
     <div class="pi-total-num" style="font-family:'Space Grotesk',sans-serif;font-size:3.2rem;
     font-weight:700;color:#fff;line-height:1;margin-bottom:.45rem">{total:,}</div>
-    <div style="font-size:.68rem;color:rgba(255,255,255,.45)">{wib}</div>
+    <div style="font-size:.68rem;color:rgba(255,255,255,.55)" id="pi-clock">--:-- WIB</div>
+    <script>
+    (function(){{
+        var months=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Ags','Sep','Okt','Nov','Des'];
+        function tick(){{
+            var n=new Date(), h=(n.getUTCHours()+7)%24,
+                m=n.getUTCMinutes(), s=n.getUTCSeconds();
+            var str=n.getUTCDate()+' '+months[n.getUTCMonth()]+' '+n.getUTCFullYear()+
+                    ' &nbsp;·&nbsp; '+String(h).padStart(2,'0')+':'+
+                    String(m).padStart(2,'0')+':'+String(s).padStart(2,'0')+' WIB';
+            var el=document.getElementById('pi-clock');
+            if(el) el.innerHTML=str;
+        }}
+        tick(); setInterval(tick,1000);
+    }})();
+    </script>
   </div>
   <div style="text-align:right">
     <div style="font-size:.6rem;font-weight:600;letter-spacing:.1em;

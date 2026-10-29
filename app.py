@@ -96,9 +96,24 @@ if st.session_state.role is None:
                                 config={"displayModeBar": False})
         with r2c2:
             with st.container(border=True):
-                st.plotly_chart(charts.sunburst_service(df_svc),
-                                width='stretch',
-                                config={"displayModeBar": False})
+                sel = st.plotly_chart(
+                    charts.sunburst_service(df_svc),
+                    width="stretch",
+                    config={"displayModeBar": False},
+                    on_select="rerun",
+                    key="pie_service",
+                )
+                # Drill-down: tampilkan sub-service jika slice diklik
+                try:
+                    clicked = sel.selection.get("points", [])
+                    if clicked:
+                        svc_name = clicked[0].get("label", "")
+                        fig_sub = charts.pie_subservice(df_svc, svc_name)
+                        if fig_sub:
+                            st.plotly_chart(fig_sub, width="stretch",
+                                            config={"displayModeBar": False})
+                except Exception:
+                    pass
 
         st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
 
