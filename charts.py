@@ -10,7 +10,7 @@ COLORS = ["#0D2B55","#1565C0","#0077B6","#00B4D8","#48CAE4","#90E0EF","#023E8A",
 _LAYOUT = dict(
     paper_bgcolor="rgba(0,0,0,0)",
     plot_bgcolor ="rgba(0,0,0,0)",
-    margin=dict(t=36, b=20, l=10, r=10),
+    margin=dict(t=36, b=48, l=10, r=10),
     font=dict(family="Inter, sans-serif", size=11),
 )
 
@@ -78,7 +78,7 @@ def sunburst_wilayah(df: pd.DataFrame) -> go.Figure:
         title=dict(text="Sebaran Wilayah", font=dict(size=12, color=NAVY),
                    x=0.5, xanchor="center", y=0.98),
         annotations=[dict(text="Klik provinsi → detail kab/kota",
-            x=0.5, y=-0.02, showarrow=False,
+            x=0.5, y=-0.09, showarrow=False,
             font=dict(size=9, color="#94A3B8"), xref="paper", yref="paper")])
     return fig
 
@@ -127,7 +127,7 @@ def sunburst_service(df: pd.DataFrame) -> go.Figure:
         title=dict(text="Jenis Layanan", font=dict(size=12, color=NAVY),
                    x=0.5, xanchor="center", y=0.98),
         annotations=[dict(text="Klik layanan → detail sub-layanan",
-            x=0.5, y=-0.02, showarrow=False,
+            x=0.5, y=-0.09, showarrow=False,
             font=dict(size=9, color="#94A3B8"), xref="paper", yref="paper")])
     return fig
 
@@ -135,6 +135,10 @@ def sunburst_service(df: pd.DataFrame) -> go.Figure:
 def card_total_html(total: int, active: int, expired: int, tgl: str = "-") -> str:
     pa = round(active/total*100) if total else 0
     pe = round(expired/total*100) if total else 0
+    import datetime as _dt
+    tz_jkt = _dt.timezone(_dt.timedelta(hours=7))
+    now    = _dt.datetime.now(tz_jkt)
+    wib    = now.strftime("%d %b %Y · %H:%M WIB")
     return f"""
 <div class="pi-total-wrap" style="background:linear-gradient(135deg,#0D2B55 0%,#1565C0 60%,#1A4A8A 100%);
 border-radius:14px;padding:1.4rem 1.8rem;position:relative;overflow:hidden;">
@@ -147,13 +151,8 @@ border-radius:50%;background:rgba(0,180,216,0.06)"></div>
     <div style="font-size:.62rem;font-weight:600;letter-spacing:.1em;
     color:rgba(255,255,255,.4);text-transform:uppercase;margin-bottom:.4rem">Total Izin Spektrum</div>
     <div class="pi-total-num" style="font-family:'Space Grotesk',sans-serif;font-size:3.2rem;
-    font-weight:700;color:#fff;line-height:1;margin-bottom:.5rem">{total:,}</div>
-    <div style="display:flex;gap:7px;flex-wrap:wrap">
-      <span style="background:rgba(22,163,74,.28);color:#86EFAC;font-size:.63rem;
-      font-weight:600;padding:3px 10px;border-radius:20px">✓ {active:,} aktif ({pa}%)</span>
-      <span style="background:rgba(220,38,38,.28);color:#FCA5A5;font-size:.63rem;
-      font-weight:600;padding:3px 10px;border-radius:20px">✕ {expired:,} exp ({pe}%)</span>
-    </div>
+    font-weight:700;color:#fff;line-height:1;margin-bottom:.45rem">{total:,}</div>
+    <div style="font-size:.68rem;color:rgba(255,255,255,.45)">{wib}</div>
   </div>
   <div style="text-align:right">
     <div style="font-size:.6rem;font-weight:600;letter-spacing:.1em;
