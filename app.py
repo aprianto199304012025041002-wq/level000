@@ -100,12 +100,12 @@ if st.session_state.role is None:
         with r2c1:
             with st.container(border=True):
                 st.plotly_chart(charts.sunburst_wilayah(df_wil),
-                                use_container_width=True,
+                                width='stretch',
                                 config={"displayModeBar": False})
         with r2c2:
             with st.container(border=True):
                 st.plotly_chart(charts.sunburst_service(df_svc),
-                                use_container_width=True,
+                                width='stretch',
                                 config={"displayModeBar": False})
 
         st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
@@ -125,7 +125,7 @@ if st.session_state.role is None:
             <div class="role-desc">Informasi umum — nama stasiun, pemegang izin,
             dan layanan radio di wilayah Anda.</div>
         </div>""", unsafe_allow_html=True)
-        if st.button("Masuk sebagai Masyarakat", use_container_width=True, key="btn_pub"):
+        if st.button("Masuk sebagai Masyarakat", width='stretch', key="btn_pub"):
             st.session_state.role = "public"
             st.session_state.chat_history = []
             st.rerun()
@@ -142,7 +142,7 @@ if st.session_state.role is None:
             pwd = st.text_input("Password", type="password",
                                 placeholder="Masukkan password petugas",
                                 label_visibility="collapsed")
-            if st.form_submit_button("Masuk sebagai Petugas", use_container_width=True):
+            if st.form_submit_button("Masuk sebagai Petugas", width='stretch'):
                 if auth.check_officer_password(pwd):
                     st.session_state.update(role="officer", auth_failed=False,
                                             chat_history=[])
@@ -204,17 +204,17 @@ with st.sidebar:
             except Exception as e:
                 st.error(str(e))
         if st.session_state.uploaded_df is not None:
-            if st.button("Hapus upload", use_container_width=True):
+            if st.button("Hapus upload", width='stretch'):
                 st.session_state.uploaded_df = None
                 st.rerun()
 
         st.divider()
-        if st.button("🔌 Tes MySQL", use_container_width=True):
+        if st.button("🔌 Tes MySQL", width='stretch'):
             ok, msg = db.test_connection()
             (st.success if ok else st.error)(msg)
 
     st.divider()
-    if st.button("← Ganti Peran", use_container_width=True):
+    if st.button("← Ganti Peran", width='stretch'):
         reset()
         st.rerun()
 

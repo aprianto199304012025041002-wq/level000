@@ -34,13 +34,24 @@ def _cfg() -> dict | None:
     return {"host":h,"user":u,"password":p,"database":d,"port":3306} if all([h,u,p,d]) else None
 
 
+def _engine():
+    """SQLAlchemy engine (pakai pool_pre_ping supaya tidak timeout)."""
+    from sqlalchemy import create_engine
+    cfg = _cfg()
+    if not cfg:
+        raise RuntimeError("Secrets MySQL belum diisi.")
+    url = (f"mysql+pymysql://{cfg['user']}:{cfg['password']}"
+           f"@{cfg['host']}:{cfg['port']}/{cfg['database']}")
+    return create_engine(url, pool_pre_ping=True, connect_args={"connect_timeout": 8})
+
+
 def _conn():
+    """Koneksi raw pymysql (untuk SHOW COLUMNS dan test_connection)."""
     import pymysql
     cfg = _cfg()
     if not cfg:
         raise RuntimeError("Secrets MySQL belum diisi.")
-    return pymysql.connect(**cfg, connect_timeout=8,
-                           cursorclass=pymysql.cursors.DictCursor)
+    return pymysql.connect(**cfg, connect_timeout=8)
 
 
 def _use_mysql() -> bool:
@@ -48,7 +59,9 @@ def _use_mysql() -> bool:
     if _mysql_ok is not None:
         return _mysql_ok
     try:
-        c = _conn(); c.close()
+        engine = _engine()
+        with engine.connect():
+            pass
         _mysql_ok = True
     except Exception as e:
         _mysql_ok = False
@@ -58,13 +71,19 @@ def _use_mysql() -> bool:
 
 def execute(sql: str, params: tuple = ()) -> pd.DataFrame:
     """Jalankan SQL dan kembalikan DataFrame. Raise jika MySQL tidak tersedia."""
-    conn = _conn()
-    try:
-        df = pd.read_sql(sql, conn, params=params)
-        df.columns = [c.upper() for c in df.columns]
-        return df
-    finally:
-        conn.close()
+    from sqlalchemy import text
+    engine = _engine()
+    # Konversi %s placeholder ke :p0,:p1,... untuk SQLAlchemy
+    named_sql = sql
+    named_params = {}
+    for i, v in enumerate(params):
+        named_sql = named_sql.replace("%s", f":p{i}", 1)
+        named_params[f"p{i}"] = v
+    with engine.connect() as conn:
+        df = pd.read_sql(text(named_sql), conn,
+                         params=named_params if named_params else None)
+    df.columns = [c.upper() for c in df.columns]
+    return df
 
 
 def search(query_text: str, role: str = "public", limit: int = 10) -> pd.DataFrame:
@@ -81,7 +100,7 @@ def search(query_text: str, role: str = "public", limit: int = 10) -> pd.DataFra
         )
         sql = f"SELECT {cols} FROM isr WHERE {where} LIMIT {limit}"
         try:
-            return execute(sql, tuple(terms[:4]))
+            return execute(sql, tuple(terms))
         except Exception:
             pass
 

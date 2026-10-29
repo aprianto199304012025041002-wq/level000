@@ -14,16 +14,8 @@ CSS = """
     .pi-meta { font-size: 0.58rem; }
     .freq-bar { margin-bottom: 0.7rem; }
 
-    /* Stack columns */
-    [data-testid="stHorizontalBlock"] {
-        flex-direction: column !important;
-        gap: 0.5rem !important;
-    }
-    [data-testid="stColumn"] {
-        width: 100% !important;
-        flex: 0 0 100% !important;
-        min-width: 100% !important;
-    }
+    /* Bento 2x2 tetap, tapi lebih compact */
+    [data-testid="stHorizontalBlock"] { gap: 0.4rem !important; }
 
     /* Bento total card: angka lebih kecil */
     .pi-total-num { font-size: 2.2rem !important; }
