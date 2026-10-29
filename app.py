@@ -47,15 +47,19 @@ if st.session_state.role is None:
 
         # Ambil semua data sekaligus (SQL atau CSV fallback)
         if db._use_mysql():
-            s_row  = db.execute("SELECT COUNT(*) AS total, "
-                                "SUM(validity_date >= CURDATE()) AS active, "
-                                "SUM(validity_date < CURDATE()) AS expired, "
-                                "SUM(validity_date IS NULL) AS unknown, "
-                                "MAX(tgl_query) AS tgl FROM isr").iloc[0]
+            # Ambil tanggal query dari data, pakai sebagai acuan aktif/expired
+            tgl_row = db.execute("SELECT MAX(tgl_query) AS tgl FROM isr").iloc[0]
+            tgl     = str(tgl_row["TGL"] or "-")
+            s_row   = db.execute(
+                "SELECT COUNT(*) AS total, "
+                "SUM(STR_TO_DATE(validity_date, '%d-%b-%y') >= STR_TO_DATE(tgl_query, '%d-%b-%y')) AS active, "
+                "SUM(STR_TO_DATE(validity_date, '%d-%b-%y') < STR_TO_DATE(tgl_query, '%d-%b-%y')) AS expired, "
+                "SUM(validity_date IS NULL OR validity_date = '') AS unknown "
+                "FROM isr"
+            ).iloc[0]
             total  = int(s_row["TOTAL"] or 0)
             active = int(s_row["ACTIVE"] or 0)
             expired= int(s_row["EXPIRED"] or 0)
-            tgl    = str(s_row["TGL"] or "-")
             df_wil = db.execute("SELECT province, city, COUNT(*) AS cnt "
                                 "FROM isr GROUP BY province, city")
             df_svc = db.execute("SELECT service, subservice, COUNT(*) AS cnt "

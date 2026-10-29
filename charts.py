@@ -16,16 +16,16 @@ _LAYOUT = dict(
 
 
 def sunburst_wilayah(df: pd.DataFrame) -> go.Figure:
-    ids, labels, parents, values = ["root"], ["Wilayah"], [""], [int(df["cnt"].sum())]
-    for _, row in df.groupby("PROVINCE")["cnt"].sum().reset_index().iterrows():
+    ids, labels, parents, values = ["root"], ["Wilayah"], [""], [int(df["CNT"].sum())]
+    for _, row in df.groupby("PROVINCE")["CNT"].sum().reset_index().iterrows():
         p = str(row["PROVINCE"])
         short = "DIY" if "YOGYA" in p.upper() else "JATENG"
         ids.append(f"p_{p}"); labels.append(short)
-        parents.append("root"); values.append(int(row["cnt"]))
+        parents.append("root"); values.append(int(row["CNT"]))
     for _, row in df.iterrows():
         p = str(row["PROVINCE"]); c = str(row["CITY"])
         ids.append(f"c_{p}_{c}"); labels.append(c.title())
-        parents.append(f"p_{p}"); values.append(int(row["cnt"]))
+        parents.append(f"p_{p}"); values.append(int(row["CNT"]))
     fig = go.Figure(go.Sunburst(
         ids=ids, labels=labels, parents=parents, values=values,
         branchvalues="total",
@@ -45,19 +45,19 @@ def sunburst_wilayah(df: pd.DataFrame) -> go.Figure:
 
 
 def sunburst_service(df: pd.DataFrame) -> go.Figure:
-    ids, labels, parents, values = ["root"], ["Layanan"], [""], [int(df["cnt"].sum())]
-    for _, row in df.groupby("SERVICE")["cnt"].sum().reset_index().iterrows():
+    ids, labels, parents, values = ["root"], ["Layanan"], [""], [int(df["CNT"].sum())]
+    for _, row in df.groupby("SERVICE")["CNT"].sum().reset_index().iterrows():
         s = str(row["SERVICE"])
         short = (s.replace("Service","Svc").replace("Land Mobile","LM")
                   .replace("(public)","Pub").replace("(private)","Prv")
                   .replace("Aeronautical","Aero").replace("Other Services","Other"))
         ids.append(f"s_{s}"); labels.append(short)
-        parents.append("root"); values.append(int(row["cnt"]))
+        parents.append("root"); values.append(int(row["CNT"]))
     for _, row in df.iterrows():
         s = str(row["SERVICE"])
         sub = str(row["SUBSERVICE"]) if pd.notna(row.get("SUBSERVICE")) else "Lainnya"
         ids.append(f"b_{s}_{sub}"); labels.append(sub)
-        parents.append(f"s_{s}"); values.append(int(row["cnt"]))
+        parents.append(f"s_{s}"); values.append(int(row["CNT"]))
     fig = go.Figure(go.Sunburst(
         ids=ids, labels=labels, parents=parents, values=values,
         branchvalues="total",
