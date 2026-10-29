@@ -4,6 +4,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 import analyst
+import charts
 import auth
 import db
 import llm
@@ -39,82 +40,71 @@ st.markdown(style.HEADER_HTML, unsafe_allow_html=True)
 # ════════════════════════════════════════════════════════════════════════════
 if st.session_state.role is None:
 
-    # Statistik bento
+    # ── Bento 2x2 ────────────────────────────────────────────────────────
     try:
-        s = db.stats_for_header()
+        import pandas as pd
+        from functools import lru_cache
 
-        # Coba ambil layanan terbesar
-        try:
-            svc_df = db.execute(
-                "SELECT service, COUNT(*) AS cnt FROM isr "
-                "GROUP BY service ORDER BY cnt DESC LIMIT 1"
-            )
-            top_svc   = str(svc_df.iloc[0]["SERVICE"]).replace("Service","Svc").strip()
-            top_count = int(svc_df.iloc[0]["CNT"])
-        except Exception:
-            top_svc, top_count = "Fixed Service", 6107
+        # Ambil semua data sekaligus (SQL atau CSV fallback)
+        if db._use_mysql():
+            s_row  = db.execute("SELECT COUNT(*) AS total, "
+                                "SUM(validity_date >= CURDATE()) AS active, "
+                                "SUM(validity_date < CURDATE()) AS expired, "
+                                "SUM(validity_date IS NULL) AS unknown, "
+                                "MAX(tgl_query) AS tgl FROM isr").iloc[0]
+            total  = int(s_row["TOTAL"] or 0)
+            active = int(s_row["ACTIVE"] or 0)
+            expired= int(s_row["EXPIRED"] or 0)
+            tgl    = str(s_row["TGL"] or "-")
+            df_wil = db.execute("SELECT province, city, COUNT(*) AS cnt "
+                                "FROM isr GROUP BY province, city")
+            df_svc = db.execute("SELECT service, subservice, COUNT(*) AS cnt "
+                                "FROM isr GROUP BY service, subservice")
+        else:
+            df_all = db._load_csv("officer")
+            total  = len(df_all)
+            vd = pd.to_datetime(df_all.get("VALIDITY_DATE", pd.Series()), errors="coerce")
+            import datetime as _dt
+            today_ = pd.Timestamp(_dt.date.today())
+            active = int((vd >= today_).sum())
+            expired= int((vd < today_).sum())
+            tgl    = str(df_all["TGL_QUERY"].iloc[0]) if "TGL_QUERY" in df_all.columns else "-"
+            df_wil = df_all.groupby(["PROVINCE","CITY"]).size().reset_index(name="cnt")
+            df_svc = df_all.groupby(["SERVICE","SUBSERVICE"]).size().reset_index(name="cnt")
 
-        st.markdown(
-            style.bento_html(s["TOTAL"], s["ACTIVE"], s["EXPIRED"],
-                             s["UNKNOWN"], top_svc, top_count, 2),
-            unsafe_allow_html=True,
-        )
+        df_wil.columns = [c.upper() for c in df_wil.columns]
+        df_svc.columns = [c.upper() for c in df_svc.columns]
+        n_prov = df_wil["PROVINCE"].nunique()
+        n_kota = df_wil["CITY"].nunique()
+        src = db.data_source()
 
-        # Grafik Plotly mini — donut + bar horizontal
-        c1, c2 = st.columns([1, 1.4])
+        # Baris 1: Total + Info dataset
+        r1c1, r1c2 = st.columns(2)
+        with r1c1:
+            st.markdown(charts.card_total_html(total, active, expired),
+                        unsafe_allow_html=True)
+        with r1c2:
+            st.markdown(charts.card_date_html(tgl, src, n_prov, n_kota),
+                        unsafe_allow_html=True)
 
-        with c1:
-            fig_donut = go.Figure(go.Pie(
-                labels=["Aktif", "Expired", "Tdk diketahui"],
-                values=[s["ACTIVE"], s["EXPIRED"], s["UNKNOWN"]],
-                hole=0.62,
-                marker_colors=["#16A34A", "#DC2626", "#D97706"],
-                textinfo="none",
-                hovertemplate="%{label}: %{value:,}<extra></extra>",
-            ))
-            fig_donut.update_layout(
-                margin=dict(t=10, b=10, l=10, r=10),
-                height=160,
-                paper_bgcolor="rgba(0,0,0,0)",
-                plot_bgcolor="rgba(0,0,0,0)",
-                showlegend=True,
-                legend=dict(font=dict(size=10), orientation="v",
-                            x=1, y=0.5, xanchor="left"),
-                annotations=[dict(text=f"<b>{s['TOTAL']:,}</b>", x=0.5, y=0.5,
-                                  font_size=13, showarrow=False, font_color="#0D2B55")],
-            )
-            st.plotly_chart(fig_donut, use_container_width=True, config={"displayModeBar": False})
+        st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
 
-        with c2:
-            try:
-                svc_all = db.execute(
-                    "SELECT service, COUNT(*) AS cnt FROM isr "
-                    "GROUP BY service ORDER BY cnt ASC"
-                )
-                fig_bar = go.Figure(go.Bar(
-                    x=svc_all["CNT"].tolist(),
-                    y=svc_all["SERVICE"].tolist(),
-                    orientation="h",
-                    marker_color="#00B4D8",
-                    text=svc_all["CNT"].apply(lambda v: f"{int(v):,}"),
-                    textposition="outside",
-                    hovertemplate="%{y}: %{x:,}<extra></extra>",
-                ))
-                fig_bar.update_layout(
-                    margin=dict(t=10, b=10, l=10, r=40),
-                    height=160,
-                    paper_bgcolor="rgba(0,0,0,0)",
-                    plot_bgcolor="rgba(0,0,0,0)",
-                    xaxis=dict(visible=False),
-                    yaxis=dict(tickfont=dict(size=10)),
-                    font=dict(family="Inter"),
-                )
-                st.plotly_chart(fig_bar, use_container_width=True, config={"displayModeBar": False})
-            except Exception:
-                pass
+        # Baris 2: Sunburst Wilayah + Sunburst Service
+        r2c1, r2c2 = st.columns(2)
+        with r2c1:
+            st.plotly_chart(charts.sunburst_wilayah(df_wil),
+                            use_container_width=True,
+                            config={"displayModeBar": False})
+        with r2c2:
+            st.plotly_chart(charts.sunburst_service(df_svc),
+                            use_container_width=True,
+                            config={"displayModeBar": False})
 
-    except Exception:
-        pass
+        st.markdown("<hr style='border:none;border-top:1px solid #E2E8F0;margin:.6rem 0 1rem'>",
+                    unsafe_allow_html=True)
+
+    except Exception as _e:
+        st.caption(f"Dashboard tidak tersedia: {_e}")
 
     # Pilih peran
     st.markdown("### Masuk sebagai")
