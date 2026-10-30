@@ -75,6 +75,7 @@ def sunburst_wilayah(df: pd.DataFrame) -> go.Figure:
         leaf=dict(opacity=0.85),
     ))
     fig.update_layout(**_LAYOUT, height=320,
+        uniformtext=dict(minsize=7, mode="hide"),
         title=dict(text="Sebaran Wilayah", font=dict(size=12, color=NAVY),
                    x=0.5, xanchor="center", y=0.98),
         annotations=[dict(text="Klik provinsi → detail kab/kota",
@@ -120,9 +121,9 @@ def sunburst_service(df: pd.DataFrame) -> go.Figure:
         marker=dict(colors=node_colors, line=dict(color="white", width=1.5)),
         maxdepth=2,
         leaf=dict(opacity=0.88),
-        uniformtext=dict(minsize=7, mode="hide"),
     ))
     fig.update_layout(**_LAYOUT, height=320,
+        uniformtext=dict(minsize=7, mode="hide"),
         title=dict(text="Jenis Layanan", font=dict(size=12, color=NAVY),
                    x=0.5, xanchor="center", y=0.98),
         annotations=[dict(text="Klik layanan → detail sub-layanan",
