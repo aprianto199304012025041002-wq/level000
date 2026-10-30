@@ -129,6 +129,65 @@ def sunburst_service(df: pd.DataFrame) -> go.Figure:
             x=0.5, y=-0.09, showarrow=False,
             font=dict(size=9, color="#94A3B8"), xref="paper", yref="paper")])
     return fig
+
+def card_total_html(total: int, active: int, expired: int, tgl: str = "-") -> str:
+    pa = round(active/total*100) if total else 0
+    pe = round(expired/total*100) if total else 0
+    return f"""
+<div class="pi-total-wrap" style="background:linear-gradient(135deg,#0D2B55 0%,#1565C0 60%,#1A4A8A 100%);
+border-radius:14px;padding:1.4rem 1.8rem;position:relative;overflow:hidden;">
+<div style="position:absolute;right:-30px;top:-30px;width:180px;height:180px;
+border-radius:50%;background:rgba(0,180,216,0.10)"></div>
+<div style="position:absolute;right:60px;bottom:-20px;width:100px;height:100px;
+border-radius:50%;background:rgba(0,180,216,0.06)"></div>
+<div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:1rem">
+  <div>
+    <div style="font-size:.62rem;font-weight:600;letter-spacing:.1em;
+    color:rgba(255,255,255,.4);text-transform:uppercase;margin-bottom:.4rem">Total Izin Stasiun Radio</div>
+    <div class="pi-total-num" style="font-family:'Space Grotesk',sans-serif;font-size:3.2rem;
+    font-weight:700;color:#fff;line-height:1;margin-bottom:.45rem">{total:,}</div>
+    <div style="font-size:.68rem;color:rgba(255,255,255,.45)" id="pi-clock">memuat waktu...</div>
+  </div>
+  <div style="text-align:right">
+    <div style="font-size:.6rem;font-weight:600;letter-spacing:.1em;
+    color:rgba(255,255,255,.4);text-transform:uppercase;margin-bottom:.3rem">Data per</div>
+    <div style="font-family:'Space Grotesk',sans-serif;font-size:1.4rem;
+    font-weight:700;color:#00B4D8;line-height:1">{tgl}</div>
+    <div style="font-size:.62rem;color:rgba(255,255,255,.4);margin-top:.3rem">
+    DIY &amp; Jawa Tengah</div>
+  </div>
+</div></div>"""
+
+
+def card_date_inner_html(tgl: str, sumber: str, n_prov: int, n_kota: int) -> str:
+    return f"""
+<div style="padding:.2rem .1rem">
+<div style="font-size:.62rem;font-weight:600;letter-spacing:.08em;
+color:#94A3B8;text-transform:uppercase;margin-bottom:.7rem">Informasi Dataset</div>
+<div class="pi-info-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem">
+  <div>
+    <div style="font-size:.68rem;color:#64748B;margin-bottom:2px">Tanggal Query</div>
+    <div class="pi-info-val" style="font-family:'Space Grotesk',sans-serif;font-size:1.1rem;
+    font-weight:700;color:#0D2B55">{tgl}</div>
+  </div>
+  <div>
+    <div style="font-size:.68rem;color:#64748B;margin-bottom:2px">Sumber</div>
+    <div class="pi-info-val" style="font-family:'Space Grotesk',sans-serif;font-size:1.1rem;
+    font-weight:700;color:#1565C0">{sumber}</div>
+  </div>
+  <div>
+    <div style="font-size:.68rem;color:#64748B;margin-bottom:2px">Provinsi</div>
+    <div class="pi-info-val" style="font-family:'Space Grotesk',sans-serif;font-size:1.4rem;
+    font-weight:700;color:#0D2B55">{n_prov}</div>
+  </div>
+  <div>
+    <div style="font-size:.68rem;color:#64748B;margin-bottom:2px">Kab/Kota</div>
+    <div class="pi-info-val" style="font-family:'Space Grotesk',sans-serif;font-size:1.4rem;
+    font-weight:700;color:#0D2B55">{n_kota}</div>
+  </div>
+</div></div>"""
+
+
 def card_date_html(tgl: str, sumber: str, n_prov: int, n_kota: int) -> str:
     return f"""
 <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:14px;
