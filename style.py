@@ -336,20 +336,28 @@ html, body, [class*="css"] { font-family: 'Inter', sans-serif !important; }
 </style>
 <script>
 (function() {
-    var months=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Ags','Sep','Okt','Nov','Des'];
-    var days=['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
-    function tick() {
+    var M=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Ags','Sep','Okt','Nov','Des'];
+    var D=['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+    function fmt() {
         var n=new Date(), jkt=new Date(n.getTime()+7*3600000);
         var h=jkt.getUTCHours(), m=jkt.getUTCMinutes(), s=jkt.getUTCSeconds();
-        var d=jkt.getUTCDate(), mo=months[jkt.getUTCMonth()], y=jkt.getUTCFullYear();
-        var dy=days[jkt.getUTCDay()];
-        var str=dy+', '+String(d).padStart(2,'0')+' '+mo+' '+y+
-                ' · '+String(h).padStart(2,'0')+':'+
-                String(m).padStart(2,'0')+':'+String(s).padStart(2,'0')+' WIB';
-        var el=document.getElementById('pi-clock');
-        if(el){ el.textContent=str; } else { setTimeout(tick,100); }
+        var d=jkt.getUTCDate(), mo=M[jkt.getUTCMonth()], y=jkt.getUTCFullYear();
+        return D[jkt.getUTCDay()]+', '+String(d).padStart(2,'0')+' '+mo+' '+y+
+               ' · '+String(h).padStart(2,'0')+':'+
+               String(m).padStart(2,'0')+':'+String(s).padStart(2,'0')+' WIB';
     }
-    tick(); setInterval(tick,1000);
+    function tick() {
+        var el=document.getElementById('pi-clock');
+        if(el) el.textContent=fmt();
+    }
+    // Retry sampai elemen ada di DOM
+    var finder=setInterval(function(){
+        if(document.getElementById('pi-clock')){
+            clearInterval(finder);
+            tick();
+            setInterval(tick,1000);
+        }
+    },150);
 })();
 </script>
 """

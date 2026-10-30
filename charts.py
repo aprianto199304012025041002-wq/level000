@@ -84,140 +84,51 @@ def sunburst_wilayah(df: pd.DataFrame) -> go.Figure:
 
 
 def sunburst_service(df: pd.DataFrame) -> go.Figure:
-    """
-    Pie chart service level-1: label luar + pointer panah untuk slice kecil.
-    Klik slice → drill-down sub-service di chart kedua (dihandle di app.py).
-    """
-    svcs = df.groupby("SERVICE")["CNT"].sum().reset_index().sort_values("CNT", ascending=False)
-    tot  = int(svcs["CNT"].sum())
-    lbls = svcs["SERVICE"].tolist()
-    vals = svcs["CNT"].tolist()
-    pcts = [v/tot*100 for v in vals]
+    """Sunburst interaktif Service → Subservice, styling seragam dengan wilayah."""
+    tot = int(df["CNT"].sum())
+    ids, labels, parents, values = ["root"], ["Layanan"], [""], [tot]
 
-    # Pull slice kecil (<3%) ke luar supaya label keliatan
-    pulls = [0.07 if p < 3 else 0.02 for p in pcts]
+    svcs = df.groupby("SERVICE")["CNT"].sum().reset_index()
+    for _, row in svcs.iterrows():
+        s = str(row["SERVICE"])
+        ids.append(f"s_{s}"); labels.append(s)
+        parents.append("root"); values.append(int(row["CNT"]))
 
-    # Warna per service
-    colors = [_PAL_SERVICE[i % len(_PAL_SERVICE)] for i in range(len(lbls))]
+    for _, row in df.iterrows():
+        s   = str(row["SERVICE"])
+        sub = str(row["SUBSERVICE"]) if pd.notna(row.get("SUBSERVICE")) else "Lainnya"
+        ids.append(f"b_{s}_{sub}"); labels.append(sub)
+        parents.append(f"s_{s}"); values.append(int(row["CNT"]))
 
-    fig = go.Figure(go.Pie(
-        labels=lbls,
-        values=vals,
-        pull=pulls,
-        marker=dict(colors=colors, line=dict(color="white", width=2)),
-        textposition="outside",
-        textinfo="label+percent",
-        texttemplate="<b>%{label}</b><br>%{percent:.1%}",
-        textfont=dict(size=10, family="Inter, sans-serif"),
-        hovertemplate="<b>%{label}</b><br>%{value:,} izin · %{percent:.1%}<extra></extra>",
-        insidetextorientation="auto",
-        rotation=45,
+    n = len(ids)
+    node_colors = []
+    for i, pid in enumerate(parents):
+        if pid == "":       node_colors.append("#004D40")
+        elif pid == "root": node_colors.append(_PAL_SERVICE[i % len(_PAL_SERVICE)])
+        else:               node_colors.append(_PAL_SERVICE[(i+4) % len(_PAL_SERVICE)])
+
+    customdata = [f"{v/tot*100:.1f}" for v in values]
+
+    fig = go.Figure(go.Sunburst(
+        ids=ids, labels=labels, parents=parents, values=values,
+        branchvalues="total",
+        customdata=customdata,
+        texttemplate="%{label}<br><b>%{customdata}%</b>",
+        hovertemplate="<b>%{label}</b><br>%{value:,} izin · %{customdata}%<extra></extra>",
+        insidetextorientation="radial",
+        textfont=dict(size=10),
+        marker=dict(colors=node_colors, line=dict(color="white", width=1.5)),
+        maxdepth=2,
+        leaf=dict(opacity=0.88),
+        uniformtext=dict(minsize=7, mode="hide"),
     ))
-    fig.update_layout(
-        **{k: v for k, v in _LAYOUT.items() if k != "margin"},
-        margin=dict(t=40, b=100, l=80, r=80),
-        height=380,
-        showlegend=False,
-        title=dict(text="Jenis Layanan · klik slice untuk sub-layanan",
-                   font=dict(size=11, color=NAVY), x=0.5, xanchor="center", y=0.97),
-    )
+    fig.update_layout(**_LAYOUT, height=320,
+        title=dict(text="Jenis Layanan", font=dict(size=12, color=NAVY),
+                   x=0.5, xanchor="center", y=0.98),
+        annotations=[dict(text="Klik layanan → detail sub-layanan",
+            x=0.5, y=-0.09, showarrow=False,
+            font=dict(size=9, color="#94A3B8"), xref="paper", yref="paper")])
     return fig
-
-
-def pie_subservice(df: pd.DataFrame, service: str) -> go.Figure:
-    """Pie sub-service untuk service tertentu (dipakai saat user klik)."""
-    sub = df[df["SERVICE"] == service].groupby("SUBSERVICE")["CNT"].sum().reset_index()
-    if sub.empty:
-        return None
-    tot  = int(sub["CNT"].sum())
-    lbls = sub["SUBSERVICE"].fillna("Lainnya").tolist()
-    vals = sub["CNT"].tolist()
-    pcts = [v/tot*100 for v in vals]
-    pulls = [0.07 if p < 5 else 0.02 for p in pcts]
-    colors = [_PAL_SERVICE[i % len(_PAL_SERVICE)] for i in range(len(lbls))]
-    fig = go.Figure(go.Pie(
-        labels=lbls, values=vals, pull=pulls,
-        marker=dict(colors=colors, line=dict(color="white", width=2)),
-        textposition="outside",
-        textinfo="label+percent",
-        texttemplate="<b>%{label}</b><br>%{percent:.1%}",
-        textfont=dict(size=10, family="Inter, sans-serif"),
-        hovertemplate="<b>%{label}</b><br>%{value:,} izin · %{percent:.1%}<extra></extra>",
-        rotation=45,
-    ))
-    fig.update_layout(
-        **{k: v for k, v in _LAYOUT.items() if k != "margin"},
-        margin=dict(t=40, b=60, l=60, r=60),
-        height=300,
-        showlegend=False,
-        title=dict(text=f"Sub-layanan: {service}",
-                   font=dict(size=11, color=NAVY), x=0.5, xanchor="center", y=0.97),
-    )
-    return fig
-
-
-def card_total_html(total: int, active: int, expired: int, tgl: str = "-") -> str:
-    pa = round(active/total*100) if total else 0
-    pe = round(expired/total*100) if total else 0
-    import datetime as _dt
-    tz_jkt = _dt.timezone(_dt.timedelta(hours=7))
-    tgl_str = tgl  # tanggal dari DB tetap statis
-    return f"""
-<div class="pi-total-wrap" style="background:linear-gradient(135deg,#0D2B55 0%,#1565C0 60%,#1A4A8A 100%);
-border-radius:14px;padding:1.4rem 1.8rem;position:relative;overflow:hidden;">
-<div style="position:absolute;right:-30px;top:-30px;width:180px;height:180px;
-border-radius:50%;background:rgba(0,180,216,0.10)"></div>
-<div style="position:absolute;right:60px;bottom:-20px;width:100px;height:100px;
-border-radius:50%;background:rgba(0,180,216,0.06)"></div>
-<div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:1rem">
-  <div>
-    <div style="font-size:.62rem;font-weight:600;letter-spacing:.1em;
-    color:rgba(255,255,255,.4);text-transform:uppercase;margin-bottom:.4rem">Total Izin Stasiun Radio</div>
-    <div class="pi-total-num" style="font-family:'Space Grotesk',sans-serif;font-size:3.2rem;
-    font-weight:700;color:#fff;line-height:1;margin-bottom:.45rem">{total:,}</div>
-    <div style="font-size:.68rem;color:rgba(255,255,255,.55)" id="pi-clock">memuat waktu...</div>
-  </div>
-  <div style="text-align:right">
-    <div style="font-size:.6rem;font-weight:600;letter-spacing:.1em;
-    color:rgba(255,255,255,.4);text-transform:uppercase;margin-bottom:.3rem">Data per</div>
-    <div style="font-family:'Space Grotesk',sans-serif;font-size:1.4rem;
-    font-weight:700;color:#00B4D8;line-height:1">{tgl}</div>
-    <div style="font-size:.62rem;color:rgba(255,255,255,.4);margin-top:.3rem">
-    DIY &amp; Jawa Tengah</div>
-  </div>
-</div></div>"""
-
-
-def card_date_inner_html(tgl: str, sumber: str, n_prov: int, n_kota: int) -> str:
-    """Konten info dataset tanpa card wrapper (untuk st.container border=True)."""
-    return f"""
-<div style="padding:.2rem .1rem">
-<div style="font-size:.62rem;font-weight:600;letter-spacing:.08em;
-color:#94A3B8;text-transform:uppercase;margin-bottom:.7rem">Informasi Dataset</div>
-<div class="pi-info-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem">
-  <div>
-    <div style="font-size:.68rem;color:#64748B;margin-bottom:2px">Tanggal Query</div>
-    <div class="pi-info-val" style="font-family:'Space Grotesk',sans-serif;font-size:1.1rem;
-    font-weight:700;color:#0D2B55">{tgl}</div>
-  </div>
-  <div>
-    <div style="font-size:.68rem;color:#64748B;margin-bottom:2px">Sumber</div>
-    <div class="pi-info-val" style="font-family:'Space Grotesk',sans-serif;font-size:1.1rem;
-    font-weight:700;color:#1565C0">{sumber}</div>
-  </div>
-  <div>
-    <div style="font-size:.68rem;color:#64748B;margin-bottom:2px">Provinsi</div>
-    <div class="pi-info-val" style="font-family:'Space Grotesk',sans-serif;font-size:1.4rem;
-    font-weight:700;color:#0D2B55">{n_prov}</div>
-  </div>
-  <div>
-    <div style="font-size:.68rem;color:#64748B;margin-bottom:2px">Kab/Kota</div>
-    <div class="pi-info-val" style="font-family:'Space Grotesk',sans-serif;font-size:1.4rem;
-    font-weight:700;color:#0D2B55">{n_kota}</div>
-  </div>
-</div></div>"""
-
-
 def card_date_html(tgl: str, sumber: str, n_prov: int, n_kota: int) -> str:
     return f"""
 <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:14px;
