@@ -84,53 +84,52 @@ if st.session_state.role is None:
         src = db.data_source()
 
         # ── Baris 1: Total + Tanggal (satu card full width) ────────────
-        components.html(f"""
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{background:transparent;font-family:'Inter',sans-serif}
-.card{background:linear-gradient(135deg,#0D2B55 0%,#1565C0 60%,#1A4A8A 100%);
-  border-radius:14px;padding:1.3rem 1.6rem;position:relative;overflow:hidden;
-  display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap}
-.card::before{content:'';position:absolute;right:-30px;top:-30px;width:180px;height:180px;
-  border-radius:50%;background:rgba(0,180,216,0.10)}
-.lbl{font-size:.6rem;font-weight:600;letter-spacing:.1em;color:rgba(255,255,255,.4);
-  text-transform:uppercase;margin-bottom:.35rem}
-.num{font-family:'Space Grotesk','Inter',sans-serif;font-size:3rem;font-weight:700;
-  color:#fff;line-height:1;margin-bottom:.4rem}
-.clk{font-size:.7rem;color:rgba(255,255,255,.65)}
-.rtl{text-align:right}
-.lbl2{font-size:.58rem;font-weight:600;letter-spacing:.1em;color:rgba(255,255,255,.4);
-  text-transform:uppercase;margin-bottom:.3rem}
-.tgl{font-size:1.35rem;font-weight:700;color:#00B4D8;
-  font-family:'Space Grotesk','Inter',sans-serif;line-height:1}
-.sub{font-size:.58rem;color:rgba(255,255,255,.4);margin-top:.3rem}
-</style>
-<div class="card">
-  <div>
-    <div class="lbl">Total Izin Stasiun Radio</div>
-    <div class="num">{total:,}</div>
-    <div id="clk" class="clk">memuat...</div>
-  </div>
-  <div class="rtl">
-    <div class="lbl2">Data per</div>
-    <div class="tgl">{tgl}</div>
-    <div class="sub">DIY &amp; Jawa Tengah</div>
-  </div>
-</div>
-<script>
-var M=["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Ags","Sep","Okt","Nov","Des"];
-var D=["Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"];
-function tick(){
-  var n=new Date(),j=new Date(n.getTime()+25200000);
-  var h=j.getUTCHours(),m=j.getUTCMinutes(),s=j.getUTCSeconds();
-  var el=document.getElementById("clk");
-  if(el) el.textContent=D[j.getUTCDay()]+", "+
-    String(j.getUTCDate()).padStart(2,"0")+" "+M[j.getUTCMonth()]+" "+j.getUTCFullYear()+
-    " · "+String(h).padStart(2,"0")+":"+String(m).padStart(2,"0")+":"+
-    String(s).padStart(2,"0")+" WIB";
-}
-tick(); setInterval(tick,1000);
-</script>""", height=150)
+        _card_html = (
+            "<style>"
+            "*{box-sizing:border-box;margin:0;padding:0}"
+            "body{background:transparent;font-family:'Inter',sans-serif}"
+            ".card{background:linear-gradient(135deg,#0D2B55 0%,#1565C0 60%,#1A4A8A 100%);"
+            "border-radius:14px;padding:1.3rem 1.6rem;position:relative;overflow:hidden;"
+            "display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap}"
+            ".lbl{font-size:.6rem;font-weight:600;letter-spacing:.1em;color:rgba(255,255,255,.4);"
+            "text-transform:uppercase;margin-bottom:.35rem}"
+            ".num{font-family:'Space Grotesk','Inter',sans-serif;font-size:3rem;font-weight:700;"
+            "color:#fff;line-height:1;margin-bottom:.4rem}"
+            ".clk{font-size:.7rem;color:rgba(255,255,255,.65)}"
+            ".rtl{text-align:right}"
+            ".lbl2{font-size:.58rem;font-weight:600;letter-spacing:.1em;color:rgba(255,255,255,.4);"
+            "text-transform:uppercase;margin-bottom:.3rem}"
+            ".tgl{font-size:1.35rem;font-weight:700;color:#00B4D8;"
+            "font-family:'Space Grotesk','Inter',sans-serif;line-height:1}"
+            ".sub{font-size:.58rem;color:rgba(255,255,255,.4);margin-top:.3rem}"
+            "</style>"
+            "<div class=\'card\'>"
+            "  <div>"
+            "    <div class=\'lbl\'>Total Izin Stasiun Radio</div>"
+            f"    <div class=\'num\'>{total:,}</div>"
+            "    <div id=\'clk\' class=\'clk\'>--</div>"
+            "  </div>"
+            "  <div class=\'rtl\'>"
+            "    <div class=\'lbl2\'>Data per</div>"
+            f"    <div class=\'tgl\'>{tgl}</div>"
+            "    <div class=\'sub\'>DIY &amp; Jawa Tengah</div>"
+            "  </div>"
+            "</div>"
+            "<script>"
+            "var M=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Ags','Sep','Okt','Nov','Des'];"
+            "var D=['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];"
+            "function tick(){"
+            "var n=new Date(),j=new Date(n.getTime()+25200000);"
+            "var h=j.getUTCHours(),m=j.getUTCMinutes(),s=j.getUTCSeconds();"
+            "var el=document.getElementById('clk');"
+            "if(el)el.textContent=D[j.getUTCDay()]+', '+"
+            "String(j.getUTCDate()).padStart(2,'0')+' '+M[j.getUTCMonth()]+' '+j.getUTCFullYear()+"
+            "' \u00b7 '+String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0')+' WIB';"
+            "}"
+            "tick();setInterval(tick,1000);"
+            "</script>"
+        )
+        components.html(_card_html, height=150)
         st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
 
         # ── Baris 2: Sunburst Wilayah + Sunburst Service ────────────────
