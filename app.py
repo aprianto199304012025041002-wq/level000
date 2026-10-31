@@ -84,18 +84,11 @@ if st.session_state.role is None:
         src = db.data_source()
 
         # ── Baris 1: Total + Tanggal (satu card full width) ────────────
-        import datetime as _dt
-        _tz = _dt.timezone(_dt.timedelta(hours=7))
-        _now = _dt.datetime.now(_tz)
-        _days = ["Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"]
-        _months = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Ags","Sep","Okt","Nov","Des"]
-        _clock_str = f"{_days[_now.weekday()]}, {_now.day:02d} {_months[_now.month-1]} {_now.year}"
-        st.markdown(charts.card_total_html(total, active, expired, tgl, _clock_str),
+        st.markdown(charts.card_total_html(total, active, expired, tgl),
                     unsafe_allow_html=True)
-        # Live clock via components.html (iframe, tidak di-strip Streamlit)
         components.html(
-            """<div id="c" style="font-size:.68rem;color:rgba(255,255,255,.55);
-               font-family:'Inter',sans-serif;padding:0;margin:-8px 0 0 0;
+            """<div id="c" style="font-size:.68rem;color:rgba(255,255,255,.7);
+               font-family:'Inter',sans-serif;padding:0;margin:-6px 0 0 0;
                background:transparent;line-height:1"></div>
             <script>
             var M=["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Ags","Sep","Okt","Nov","Des"];
@@ -111,7 +104,7 @@ if st.session_state.role is None:
             }
             tick(); setInterval(tick,1000);
             </script>""",
-            height=22,
+            height=24,
         )
         st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
 

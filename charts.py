@@ -133,7 +133,7 @@ def sunburst_service(df: pd.DataFrame) -> go.Figure:
 
 
 
-def card_total_html(total: int, active: int, expired: int, tgl: str = "-", clock: str = "") -> str:
+def card_total_html(total: int, active: int, expired: int, tgl: str = "-") -> str:
     pa = round(active/total*100) if total else 0
     pe = round(expired/total*100) if total else 0
     return f"""
@@ -149,7 +149,7 @@ border-radius:50%;background:rgba(0,180,216,0.06)"></div>
     color:rgba(255,255,255,.4);text-transform:uppercase;margin-bottom:.4rem">Total Izin Stasiun Radio</div>
     <div class="pi-total-num" style="font-family:'Space Grotesk',sans-serif;font-size:3.2rem;
     font-weight:700;color:#fff;line-height:1;margin-bottom:.45rem">{total:,}</div>
-    <div style="font-size:.68rem;color:rgba(255,255,255,.45)">{clock}</div>
+
   </div>
   <div style="text-align:right">
     <div style="font-size:.6rem;font-weight:600;letter-spacing:.1em;
