@@ -334,32 +334,6 @@ html, body, [class*="css"] { font-family: 'Inter', sans-serif !important; }
 }
 .chip:hover { border-color: var(--signal); color: var(--signal); }
 </style>
-<script>
-(function() {
-    var M=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Ags','Sep','Okt','Nov','Des'];
-    var D=['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
-    function fmt() {
-        var n=new Date(), jkt=new Date(n.getTime()+7*3600000);
-        var h=jkt.getUTCHours(), m=jkt.getUTCMinutes(), s=jkt.getUTCSeconds();
-        var d=jkt.getUTCDate(), mo=M[jkt.getUTCMonth()], y=jkt.getUTCFullYear();
-        return D[jkt.getUTCDay()]+', '+String(d).padStart(2,'0')+' '+mo+' '+y+
-               ' · '+String(h).padStart(2,'0')+':'+
-               String(m).padStart(2,'0')+':'+String(s).padStart(2,'0')+' WIB';
-    }
-    function tick() {
-        var el=document.getElementById('pi-clock');
-        if(el) el.textContent=fmt();
-    }
-    // Retry sampai elemen ada di DOM
-    var finder=setInterval(function(){
-        if(document.getElementById('pi-clock')){
-            clearInterval(finder);
-            tick();
-            setInterval(tick,1000);
-        }
-    },150);
-})();
-</script>
 """
 
 HEADER_HTML = """

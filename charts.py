@@ -148,6 +148,25 @@ border-radius:50%;background:rgba(0,180,216,0.06)"></div>
     <div class="pi-total-num" style="font-family:'Space Grotesk',sans-serif;font-size:3.2rem;
     font-weight:700;color:#fff;line-height:1;margin-bottom:.45rem">{total:,}</div>
     <div style="font-size:.68rem;color:rgba(255,255,255,.45)" id="pi-clock">memuat waktu...</div>
+    <script>
+    (function() {
+        var M=["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Ags","Sep","Okt","Nov","Des"];
+        var D=["Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"];
+        function fmt() {
+            var n=new Date(), jkt=new Date(n.getTime()+25200000);
+            var h=jkt.getUTCHours(), m=jkt.getUTCMinutes(), s=jkt.getUTCSeconds();
+            var d=jkt.getUTCDate(), mo=M[jkt.getUTCMonth()], y=jkt.getUTCFullYear();
+            return D[jkt.getUTCDay()]+", "+String(d).padStart(2,"0")+" "+mo+" "+y+
+                   " · "+String(h).padStart(2,"0")+":"+
+                   String(m).padStart(2,"0")+":"+String(s).padStart(2,"0")+" WIB";
+        }
+        function tick() {
+            var el=document.getElementById("pi-clock");
+            if (el) el.textContent=fmt();
+        }
+        tick(); setInterval(tick, 1000);
+    })();
+    </script>
   </div>
   <div style="text-align:right">
     <div style="font-size:.6rem;font-weight:600;letter-spacing:.1em;
