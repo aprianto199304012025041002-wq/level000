@@ -3,6 +3,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
+import streamlit.components.v1 as components
 import analyst
 import charts
 import auth
@@ -83,8 +84,35 @@ if st.session_state.role is None:
         src = db.data_source()
 
         # ── Baris 1: Total + Tanggal (satu card full width) ────────────
-        st.markdown(charts.card_total_html(total, active, expired, tgl),
+        import datetime as _dt
+        _tz = _dt.timezone(_dt.timedelta(hours=7))
+        _now = _dt.datetime.now(_tz)
+        _days = ["Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"]
+        _months = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Ags","Sep","Okt","Nov","Des"]
+        _clock_str = f"{_days[_now.weekday()]}, {_now.day:02d} {_months[_now.month-1]} {_now.year}"
+        st.markdown(charts.card_total_html(total, active, expired, tgl, _clock_str),
                     unsafe_allow_html=True)
+        # Live clock via components.html (iframe, tidak di-strip Streamlit)
+        components.html(
+            """<div id="c" style="font-size:.68rem;color:rgba(255,255,255,.55);
+               font-family:'Inter',sans-serif;padding:0;margin:-8px 0 0 0;
+               background:transparent;line-height:1"></div>
+            <script>
+            var M=["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Ags","Sep","Okt","Nov","Des"];
+            var D=["Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"];
+            function tick(){
+                var n=new Date(),j=new Date(n.getTime()+25200000);
+                var h=j.getUTCHours(),m=j.getUTCMinutes(),s=j.getUTCSeconds();
+                document.getElementById("c").textContent=
+                    D[j.getUTCDay()]+", "+String(j.getUTCDate()).padStart(2,"0")+" "+
+                    M[j.getUTCMonth()]+" "+j.getUTCFullYear()+" · "+
+                    String(h).padStart(2,"0")+":"+String(m).padStart(2,"0")+":"+
+                    String(s).padStart(2,"0")+" WIB";
+            }
+            tick(); setInterval(tick,1000);
+            </script>""",
+            height=22,
+        )
         st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
 
         # ── Baris 2: Sunburst Wilayah + Sunburst Service ────────────────

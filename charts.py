@@ -131,25 +131,9 @@ def sunburst_service(df: pd.DataFrame) -> go.Figure:
             font=dict(size=9, color="#94A3B8"), xref="paper", yref="paper")])
     return fig
 
-_CLOCK_JS = (
-    "<script>(function(){"
-    "var M=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Ags','Sep','Okt','Nov','Des'];"
-    "var D=['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];"
-    "function fmt(){"
-        "var n=new Date(),jkt=new Date(n.getTime()+25200000);"
-        "var h=jkt.getUTCHours(),m=jkt.getUTCMinutes(),s=jkt.getUTCSeconds();"
-        "var d=jkt.getUTCDate(),mo=M[jkt.getUTCMonth()],y=jkt.getUTCFullYear();"
-        "return D[jkt.getUTCDay()]+', '+String(d).padStart(2,'0')+' '+mo+' '+y+"
-        "' \u00b7 '+String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0')+' WIB';"
-    "}"
-    "function tick(){var el=document.getElementById('pi-clock');if(el)el.textContent=fmt();}"
-    "tick();setInterval(tick,1000);"
-    "})();</script>"
-)
 
 
-
-def card_total_html(total: int, active: int, expired: int, tgl: str = "-") -> str:
+def card_total_html(total: int, active: int, expired: int, tgl: str = "-", clock: str = "") -> str:
     pa = round(active/total*100) if total else 0
     pe = round(expired/total*100) if total else 0
     return f"""
@@ -165,7 +149,7 @@ border-radius:50%;background:rgba(0,180,216,0.06)"></div>
     color:rgba(255,255,255,.4);text-transform:uppercase;margin-bottom:.4rem">Total Izin Stasiun Radio</div>
     <div class="pi-total-num" style="font-family:'Space Grotesk',sans-serif;font-size:3.2rem;
     font-weight:700;color:#fff;line-height:1;margin-bottom:.45rem">{total:,}</div>
-    <div style="font-size:.68rem;color:rgba(255,255,255,.45)" id="pi-clock">memuat waktu...</div>
+    <div style="font-size:.68rem;color:rgba(255,255,255,.45)">{clock}</div>
   </div>
   <div style="text-align:right">
     <div style="font-size:.6rem;font-weight:600;letter-spacing:.1em;
@@ -175,7 +159,7 @@ border-radius:50%;background:rgba(0,180,216,0.06)"></div>
     <div style="font-size:.62rem;color:rgba(255,255,255,.4);margin-top:.3rem">
     DIY &amp; Jawa Tengah</div>
   </div>
-</div></div>""" + _CLOCK_JS
+</div></div>"""
 
 
 def card_date_inner_html(tgl: str, sumber: str, n_prov: int, n_kota: int) -> str:
