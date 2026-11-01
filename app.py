@@ -151,35 +151,52 @@ if st.session_state.role is None:
         st.caption(f"Dashboard tidak tersedia: {_e}")
 
     # Pilih peran
-    st.markdown("### Masuk sebagai")
-    col1, col2 = st.columns(2)
+    st.markdown("""
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem">
+        <div style="height:2px;flex:1;background:linear-gradient(90deg,transparent,#00B4D8)"></div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-size:.75rem;font-weight:600;
+                    letter-spacing:.12em;color:#64748B;text-transform:uppercase">Pilih Mode Akses</div>
+        <div style="height:2px;flex:1;background:linear-gradient(90deg,#00B4D8,transparent)"></div>
+    </div>""", unsafe_allow_html=True)
+
+    col1, col2 = st.columns(2, gap="small")
 
     with col1:
         st.markdown("""
-        <div class="role-card">
-            <div class="role-icon">🏙️</div>
-            <div class="role-title">Masyarakat Umum</div>
-            <div class="role-desc">Informasi umum — nama stasiun, pemegang izin,
-            dan layanan radio di wilayah Anda.</div>
+        <div style="background:linear-gradient(135deg,#EFF6FF 0%,#DBEAFE 100%);
+                    border:1.5px solid #BFDBFE;border-radius:14px;padding:1.2rem;
+                    margin-bottom:.6rem;min-height:140px">
+            <div style="width:42px;height:42px;background:linear-gradient(135deg,#1565C0,#00B4D8);
+                        border-radius:10px;display:flex;align-items:center;justify-content:center;
+                        font-size:1.2rem;margin-bottom:.7rem">🏙️</div>
+            <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:.95rem;
+                        color:#0D2B55;margin-bottom:.3rem">Masyarakat Umum</div>
+            <div style="font-size:.78rem;color:#475569;line-height:1.5">
+                Informasi umum stasiun radio dan pemegang izin di wilayah DIY &amp; Jawa Tengah.</div>
         </div>""", unsafe_allow_html=True)
-        if st.button("Masuk sebagai Masyarakat", use_container_width=True, key="btn_pub"):
+        if st.button("→ Masuk sebagai Masyarakat", use_container_width=True, key="btn_pub"):
             st.session_state.role = "public"
             st.session_state.chat_history = []
             st.rerun()
 
     with col2:
         st.markdown("""
-        <div class="role-card">
-            <div class="role-icon">🛡️</div>
-            <div class="role-title">Petugas Pengendali</div>
-            <div class="role-desc">Akses penuh — frekuensi, masa berlaku,
-            ERP, analisis teknis, dan pengelolaan database.</div>
+        <div style="background:linear-gradient(135deg,#F0FDF4 0%,#DCFCE7 100%);
+                    border:1.5px solid #BBF7D0;border-radius:14px;padding:1.2rem;
+                    margin-bottom:.6rem;min-height:140px">
+            <div style="width:42px;height:42px;background:linear-gradient(135deg,#15803D,#16A34A);
+                        border-radius:10px;display:flex;align-items:center;justify-content:center;
+                        font-size:1.2rem;margin-bottom:.7rem">🛡️</div>
+            <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:.95rem;
+                        color:#0D2B55;margin-bottom:.3rem">Petugas Pengendali</div>
+            <div style="font-size:.78rem;color:#475569;line-height:1.5">
+                Akses penuh data teknis, frekuensi, analisis, dan pengelolaan database spektrum.</div>
         </div>""", unsafe_allow_html=True)
         with st.form("login_form", clear_on_submit=True):
             pwd = st.text_input("Password", type="password",
-                                placeholder="Masukkan password petugas",
+                                placeholder="🔑  Password petugas",
                                 label_visibility="collapsed")
-            if st.form_submit_button("Masuk sebagai Petugas", use_container_width=True):
+            if st.form_submit_button("→ Masuk sebagai Petugas", use_container_width=True):
                 if auth.check_officer_password(pwd):
                     st.session_state.update(role="officer", auth_failed=False,
                                             chat_history=[])
@@ -188,7 +205,7 @@ if st.session_state.role is None:
                     st.session_state.auth_failed = True
 
     if st.session_state.auth_failed:
-        st.error("Password salah. Silakan coba lagi.")
+        st.error("❌ Password salah. Silakan coba lagi.")
 
     st.stop()
 
