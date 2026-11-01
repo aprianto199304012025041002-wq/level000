@@ -36,48 +36,7 @@ st.markdown(style.HEADER_HTML, unsafe_allow_html=True)
 if st.session_state.role is None:
 
     # ── Bento 2x2 ────────────────────────────────────────────────────────
-    try:
-        import pandas as pd
-        from functools import lru_cache
-
-        # Ambil semua data sekaligus (SQL atau CSV fallback)
-        if db._use_mysql():
-            # Ambil tanggal query dari data, pakai sebagai acuan aktif/expired
-            tgl_row = db.execute("SELECT MAX(tgl_query) AS tgl FROM isr").iloc[0]
-            tgl     = str(tgl_row["TGL"] or "-")
-            s_row   = db.execute(
-                "SELECT COUNT(*) AS total, "
-                "SUM(STR_TO_DATE(validity_date, '%%d-%%b-%%y') >= STR_TO_DATE(tgl_query, '%%d-%%b-%%y')) AS active, "
-                "SUM(STR_TO_DATE(validity_date, '%%d-%%b-%%y') < STR_TO_DATE(tgl_query, '%%d-%%b-%%y')) AS expired, "
-                "SUM(validity_date IS NULL OR validity_date = '') AS unknown "
-                "FROM isr"
-            ).iloc[0]
-            total  = int(s_row["TOTAL"] or 0)
-            active = int(s_row["ACTIVE"] or 0)
-            expired= int(s_row["EXPIRED"] or 0)
-            df_wil = db.execute("SELECT province, city, COUNT(*) AS cnt "
-                                "FROM isr GROUP BY province, city")
-            df_svc = db.execute("SELECT service, subservice, COUNT(*) AS cnt "
-                                "FROM isr GROUP BY service, subservice")
-        else:
-            df_all = db._load_csv("officer")
-            total  = len(df_all)
-            vd = pd.to_datetime(df_all.get("VALIDITY_DATE", pd.Series()), errors="coerce")
-            import datetime as _dt
-            today_ = pd.Timestamp(_dt.date.today())
-            active = int((vd >= today_).sum())
-            expired= int((vd < today_).sum())
-            tgl    = str(df_all["TGL_QUERY"].iloc[0]) if "TGL_QUERY" in df_all.columns else "-"
-            df_wil = df_all.groupby(["PROVINCE","CITY"]).size().reset_index(name="cnt")
-            df_svc = df_all.groupby(["SERVICE","SUBSERVICE"]).size().reset_index(name="cnt")
-
-        df_wil.columns = [c.upper() for c in df_wil.columns]
-        df_svc.columns = [c.upper() for c in df_svc.columns]
-        n_prov = df_wil["PROVINCE"].nunique()
-        n_kota = df_wil["CITY"].nunique()
-        src = db.data_source()
-
-        dashboard.render()
+    dashboard.render()
 
     # Pilih peran
     st.markdown("""
