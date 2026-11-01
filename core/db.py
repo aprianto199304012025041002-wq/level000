@@ -15,6 +15,8 @@ PUBLIC_COLS_PY   = ["SERVICE","SUBSERVICE","STN_NAME","STN_ADDR","CITY","DISTRIC
 
 _last_error: str = ""
 _mysql_ok:   bool | None = None   # None = belum dicek
+_mysql_checked_at: float = 0.0    # timestamp terakhir dicek
+_MYSQL_RETRY_SEC: float = 120.0   # retry setelah 2 menit kalau gagal
 
 
 def _secret(name: str, default: str | None = None) -> str | None:
@@ -55,18 +57,26 @@ def _conn():
 
 
 def _use_mysql() -> bool:
-    global _mysql_ok, _last_error
-    if _mysql_ok is not None:
-        return _mysql_ok
-    try:
-        engine = _engine()
-        with engine.connect():
-            pass
-        _mysql_ok = True
-    except Exception as e:
-        _mysql_ok = False
-        _last_error = str(e)
-    return _mysql_ok
+    """Cek koneksi MySQL. Retry setelah _MYSQL_RETRY_SEC jika sebelumnya gagal."""
+    import time
+    global _mysql_ok, _last_error, _mysql_checked_at
+    now = time.time()
+    # Kalau sebelumnya sukses, percaya sampai ada error nyata
+    if _mysql_ok is True:
+        return True
+    # Kalau belum dicek atau sudah waktunya retry
+    if _mysql_ok is None or (now - _mysql_checked_at) >= _MYSQL_RETRY_SEC:
+        _mysql_checked_at = now
+        try:
+            engine = _engine()
+            with engine.connect():
+                pass
+            _mysql_ok = True
+            _last_error = ""
+        except Exception as e:
+            _mysql_ok = False
+            _last_error = str(e)
+    return bool(_mysql_ok)
 
 
 def execute(sql: str, params: tuple = ()) -> pd.DataFrame:
