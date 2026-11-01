@@ -12,7 +12,7 @@ def retrieve(query: str, df: pd.DataFrame | None, k: int = 5) -> str:
     Jika df diisi (upload CSV), gunakan BM25 lokal.
     """
     if df is None or df.empty:
-        import db
+        from core import db
         hits = db.search(query, k=k)
         return hits.to_string(index=False) if not hits.empty else ""
 

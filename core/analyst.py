@@ -21,24 +21,30 @@ def _sql_context(q: str, query: str, role: str) -> list[str]:
     parts = []
 
     # Expired / masa berlaku
-    if any(w in q for w in ["expired","habis","kadaluarsa","masa berlaku"]):
+    if any(w in q for w in ["expired","habis","kadaluarsa","kadaluwarsa","masa berlaku",
+                             "tidak berlaku","sudah mati","lewat masa","kedaluarsa"]):
         try:
             r = db.execute("""
                 SELECT
-                  SUM(validity_date < CURDATE())  AS expired,
-                  SUM(validity_date >= CURDATE()) AS active,
-                  SUM(validity_date IS NULL)       AS unknown
+                  SUM(STR_TO_DATE(validity_date, '%%d-%%b-%%y') <
+                      STR_TO_DATE(tgl_query, '%%d-%%b-%%y'))      AS expired,
+                  SUM(STR_TO_DATE(validity_date, '%%d-%%b-%%y') >=
+                      STR_TO_DATE(tgl_query, '%%d-%%b-%%y'))      AS active,
+                  SUM(validity_date IS NULL OR validity_date = '') AS unknown,
+                  MAX(tgl_query) AS tgl_ref
                 FROM isr
             """).iloc[0]
+            tgl_ref = r.get("TGL_REF", "-")
             parts.append(
-                f"Status masa berlaku (per {date.today()}):\n"
+                f"Status masa berlaku (per tanggal data: {tgl_ref}):\n"
                 f"- Expired : {int(r.get('EXPIRED',0) or 0):,}\n"
                 f"- Aktif   : {int(r.get('ACTIVE',0) or 0):,}\n"
                 f"- Tidak diketahui: {int(r.get('UNKNOWN',0) or 0):,}"
             )
             svc = db.execute("""
                 SELECT service, COUNT(*) AS cnt FROM isr
-                WHERE validity_date < CURDATE()
+                WHERE STR_TO_DATE(validity_date, '%%d-%%b-%%y') <
+                      STR_TO_DATE(tgl_query, '%%d-%%b-%%y')
                 GROUP BY service ORDER BY cnt DESC
             """)
             parts.append("Expired per layanan:\n" + svc.to_string(index=False))
@@ -46,7 +52,7 @@ def _sql_context(q: str, query: str, role: str) -> list[str]:
             parts.append(f"(gagal query expired: {e})")
 
     # ERP tertinggi
-    if any(w in q for w in ["erp","daya","tertinggi","terbesar","terkuat","power"]):
+    if any(w in q for w in ["erp","daya","tertinggi","terbesar","terkuat","power","kuat","sinyal","transmit"]):
         try:
             df = db.execute("""
                 SELECT clnt_name, stn_name, freq, service, erp_pwr_dbm, city
@@ -57,7 +63,7 @@ def _sql_context(q: str, query: str, role: str) -> list[str]:
             parts.append(f"(gagal query ERP: {e})")
 
     # Jumlah / berapa
-    if any(w in q for w in ["berapa","jumlah","total","hitung","banyak"]):
+    if any(w in q for w in ["berapa","jumlah","total","hitung","banyak","statistik","rekapitulasi","rekap","distribusi"]):
         try:
             svc = db.execute(
                 "SELECT service, COUNT(*) AS jumlah FROM isr GROUP BY service ORDER BY jumlah DESC"
