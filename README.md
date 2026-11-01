@@ -33,17 +33,26 @@ Sistem informasi berbasis AI untuk pengelolaan data izin spektrum frekuensi radi
 ## Arsitektur
 
 ```
-[Streamlit Cloud]
-      │
-      ├── app.py          # UI utama, routing peran, chat interface
-      ├── llm.py          # Multi-model: Gemini (Google) + Qwen (Alibaba)
-      ├── db.py           # Koneksi MySQL Hostinger + fallback CSV
-      ├── analyst.py      # Analitik SQL langsung (expired, ERP, agregasi)
-      ├── rag.py          # BM25 search untuk data yang diupload
-      ├── prompts.py      # System prompt per peran
-      ├── auth.py         # Autentikasi password petugas
-      ├── charts.py       # Plotly sunburst & stat card
-      └── style.py        # CSS kustom & komponen HTML
+level000/
+├── app.py                  # Entry point Streamlit
+│
+├── core/                   # Business logic
+│   ├── auth.py             # Autentikasi password petugas
+│   ├── db.py               # Koneksi MySQL Hostinger + fallback CSV
+│   ├── llm.py              # Multi-model: Gemini (Google) + Qwen (Alibaba)
+│   ├── prompts.py          # System prompt per peran
+│   ├── analyst.py          # Analitik SQL langsung (expired, ERP, agregasi)
+│   └── rag.py              # BM25 search untuk data yang diupload
+│
+├── ui/                     # Komponen tampilan
+│   ├── charts.py           # Plotly sunburst & stat card
+│   └── style.py            # CSS kustom & komponen HTML
+│
+├── tests/
+│   └── test_smoke.py       # Smoke test tanpa API
+│
+└── data/
+    └── QUERY_14_JANUARI_2026.csv
 ```
 
 **Stack:**
