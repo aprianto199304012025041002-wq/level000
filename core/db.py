@@ -105,7 +105,7 @@ def search(query_text: str, role: str = "public", limit: int = 10) -> pd.DataFra
             pass
 
     # Fallback CSV + BM25
-    import rag as _rag
+    from core import rag as _rag
     df = _load_csv(role)
     return _rag.search(query_text, df, k=limit)
 

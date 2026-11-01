@@ -4,7 +4,7 @@ from datetime import date
 
 
 def build_context(query: str, df_fallback, role: str) -> str:
-    import db
+    from core import db
     q = query.lower()
     parts = []
 
@@ -17,7 +17,7 @@ def build_context(query: str, df_fallback, role: str) -> str:
 
 
 def _sql_context(q: str, query: str, role: str) -> list[str]:
-    import db
+    from core import db
     parts = []
 
     # Expired / masa berlaku

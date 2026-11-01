@@ -5,7 +5,7 @@ import streamlit as st
 
 import streamlit.components.v1 as components
 import analyst
-import charts
+from ui import charts
 import auth
 import db
 import llm
