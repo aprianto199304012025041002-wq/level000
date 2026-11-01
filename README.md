@@ -74,7 +74,11 @@ cp .env.example .env   # isi API key dan credential MySQL
 streamlit run app.py
 ```
 
-### Konfigurasi `.env`
+### Konfigurasi Secrets
+
+> **Streamlit Cloud**: isi di dashboard → app settings → **Secrets** (format TOML, terenkripsi, tidak perlu `.env`)
+>
+> **Lokal**: salin `.env.example` ke `.env`, isi nilainya. File `.env` sudah ada di `.gitignore` — **jangan di-commit ke GitHub**.
 
 ```env
 # Model AI (pilih: gemini atau qwen)
