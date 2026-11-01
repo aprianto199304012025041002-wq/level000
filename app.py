@@ -4,14 +4,8 @@ import plotly.graph_objects as go
 import streamlit as st
 
 import streamlit.components.v1 as components
-import analyst
-from ui import charts
-import auth
-import db
-import llm
-import prompts
-import rag
-import style
+from core import analyst, auth, db, llm, prompts, rag
+from ui import charts, style
 
 st.set_page_config(
     page_title="PAIDI-INSIGHT",
