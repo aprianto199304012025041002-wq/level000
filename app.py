@@ -219,7 +219,15 @@ if user_input:
                     {"role": "assistant", "content": answer}
                 )
             except Exception as e:
-                err_msg = f"Terjadi kesalahan: {e}"
+                msg = str(e)
+                if "quota" in msg.lower() or "429" in msg:
+                    err_msg = "⚠️ Kuota API habis atau terlalu banyak permintaan. Coba beberapa saat lagi."
+                elif "api key" in msg.lower() or "api_key" in msg.lower():
+                    err_msg = "⚠️ API key tidak valid atau belum diisi di Secrets."
+                elif "kedua model gagal" in msg.lower():
+                    err_msg = f"⚠️ Gemini dan Qwen keduanya tidak tersedia saat ini. Detail: {msg}"
+                else:
+                    err_msg = f"Terjadi kesalahan: {msg}"
                 st.error(err_msg)
                 st.session_state.chat_history.append(
                     {"role": "assistant", "content": err_msg}
