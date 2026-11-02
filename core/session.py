@@ -114,6 +114,13 @@ def append(role: str, content: str) -> None:
         save_message(sid, role, content)
 
 
+def _last_ts() -> str:
+    """Kembalikan timestamp pesan terakhir."""
+    import datetime as _dt
+    tz = _dt.timezone(_dt.timedelta(hours=7))
+    return _dt.datetime.now(tz).strftime("%H:%M WIB")
+
+
 def clear(role: str) -> None:
     """Hapus riwayat chat sesi ini."""
     sid = st.session_state.get("session_id", "")

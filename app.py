@@ -126,7 +126,10 @@ with st.sidebar:
         total = s["TOTAL"]
     except Exception:
         total = 0
-    st.caption(f"📊 **{src}** · {total:,} izin")
+    import datetime as _dt2
+    _tz2 = _dt2.timezone(_dt2.timedelta(hours=7))
+    _now2 = _dt2.datetime.now(_tz2).strftime("%H:%M")
+    st.caption(f"📊 **{src}** · {total:,} izin · {_now2} WIB")
 
     st.divider()
 
@@ -236,31 +239,38 @@ placeholder = (
 user_input = st.chat_input(placeholder)
 
 if user_input:
+    if len(user_input) > 500:
+        st.warning("Pertanyaan terlalu panjang (maks 500 karakter). Persingkat pertanyaanmu.")
+        st.stop()
     session.append("user", user_input)
     with st.chat_message("user", avatar="🧑"):
         st.markdown(user_input)
 
     with st.chat_message("assistant", avatar="📡"):
-        with st.spinner(""):
-            try:
-                context = analyst.build_context(user_input, uploaded_df, role)
-                if not context:
-                    context = rag.retrieve(user_input, uploaded_df, k=5)
-                if not context:
-                    context = db.summary(role)
-                messages = prompts.build_messages(user_input, context, role)
-                answer = llm.ask(messages, provider=provider)
-                st.markdown(answer)
-                session.append("assistant", answer)
-            except Exception as e:
-                msg = str(e)
-                if "quota" in msg.lower() or "429" in msg:
-                    err_msg = "⚠️ Kuota API habis atau terlalu banyak permintaan. Coba beberapa saat lagi."
-                elif "api key" in msg.lower() or "api_key" in msg.lower():
-                    err_msg = "⚠️ API key tidak valid atau belum diisi di Secrets."
-                elif "kedua model gagal" in msg.lower():
-                    err_msg = f"⚠️ Gemini dan Qwen keduanya tidak tersedia saat ini. Detail: {msg}"
-                else:
-                    err_msg = f"Terjadi kesalahan: {msg}"
-                st.error(err_msg)
-                session.append("assistant", err_msg)
+        try:
+            context = analyst.build_context(user_input, uploaded_df, role)
+            if not context:
+                context = rag.retrieve(user_input, uploaded_df, k=5)
+            if not context:
+                context = db.summary(role)
+            messages = prompts.build_messages(user_input, context, role)
+            # Streaming: token muncul satu per satu
+            answer = st.write_stream(
+                llm.ask_stream(messages, provider=provider)
+            )
+            session.append("assistant", str(answer))
+            # Tampilkan model yang menjawab + timestamp
+            _prov = provider or "gemini"
+            st.caption(f"{'✨ Gemini' if _prov=='gemini' else '🧠 Qwen'} · {session._last_ts()}")
+        except Exception as e:
+            msg = str(e)
+            if "quota" in msg.lower() or "429" in msg:
+                err_msg = "⚠️ Kuota API habis. Coba beberapa saat lagi."
+            elif "api key" in msg.lower() or "api_key" in msg.lower():
+                err_msg = "⚠️ API key tidak valid atau belum diisi di Secrets."
+            elif "kedua model gagal" in msg.lower():
+                err_msg = f"⚠️ Gemini dan Qwen keduanya tidak tersedia. Detail: {msg}"
+            else:
+                err_msg = f"Terjadi kesalahan: {msg}"
+            st.error(err_msg)
+            session.append("assistant", err_msg)
