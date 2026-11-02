@@ -11,7 +11,7 @@ st.set_page_config(
     page_title="PAIDI-INSIGHT",
     page_icon="📡",
     layout="centered",
-    initial_sidebar_state="auto",
+    initial_sidebar_state="collapsed",
 )
 st.markdown(style.CSS, unsafe_allow_html=True)
 
@@ -126,7 +126,13 @@ with st.sidebar:
         total = s["TOTAL"]
     except Exception:
         total = 0
+    if src == "CSV lokal":
+        st.warning("⚠️ MySQL tidak tersedia, menggunakan data CSV lokal.", icon="⚠️")
     st.caption(f"📊 **{src}** · {total:,} izin")
+    if st.button("🔄 Refresh data", use_container_width=True, key="refresh_data"):
+        db._mysql_ok = None  # reset cache koneksi
+        st.cache_data.clear()
+        st.rerun()
 
     st.divider()
 
@@ -172,6 +178,9 @@ with st.sidebar:
             reset()
             st.rerun()
 
+    n_msg = len(st.session_state.chat_history)
+    if n_msg > 0:
+        st.caption(f"💬 {n_msg} pesan dalam sesi ini")
     err = db.last_mysql_error()
     if err:
         st.warning(f"MySQL: {err}", icon="⚠️")

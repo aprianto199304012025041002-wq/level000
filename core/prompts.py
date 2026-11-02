@@ -30,16 +30,24 @@ OFFICER_SYSTEM = (
 )
 
 
-def build_messages(query: str, context: str, role: str = "public") -> list[dict]:
-    system = PUBLIC_SYSTEM if role == "public" else OFFICER_SYSTEM
+def build_messages(query: str, context: str, role: str = "public",
+                   history: list[dict] | None = None) -> list[dict]:
+    import datetime as _dt
+    tz  = _dt.timezone(_dt.timedelta(hours=7))
+    now = _dt.datetime.now(tz).strftime("%A, %d %B %Y %H:%M WIB")
+    system = (PUBLIC_SYSTEM if role == "public" else OFFICER_SYSTEM) + f" Waktu sekarang: {now}."
+
+    messages: list[dict] = [{"role": "system", "content": system}]
+
+    # Sertakan riwayat percakapan (maks 6 pesan terakhir untuk efisiensi)
+    if history:
+        for h in history[-6:]:
+            if h["role"] in ("user", "assistant"):
+                messages.append({"role": h["role"], "content": h["content"][:1000]})
+
     if context:
-        content = (
-            f"Data dari database:\n{context}\n\n"
-            f"Pertanyaan: {query}"
-        )
+        user_content = f"Data dari database:\n{context}\n\nPertanyaan: {query}"
     else:
-        content = query
-    return [
-        {"role": "system", "content": system},
-        {"role": "user", "content": content},
-    ]
+        user_content = query
+    messages.append({"role": "user", "content": user_content})
+    return messages
