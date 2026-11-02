@@ -126,10 +126,7 @@ with st.sidebar:
         total = s["TOTAL"]
     except Exception:
         total = 0
-    import datetime as _dt2
-    _tz2 = _dt2.timezone(_dt2.timedelta(hours=7))
-    _now2 = _dt2.datetime.now(_tz2).strftime("%H:%M")
-    st.caption(f"📊 **{src}** · {total:,} izin · {_now2} WIB")
+    st.caption(f"📊 **{src}** · {total:,} izin")
 
     st.divider()
 
@@ -203,12 +200,13 @@ if not st.session_state.chat_history:
         chips = ["Layanan radio apa saja di Bantul?","Siapa pemegang izin di Sleman?","Apa itu Fixed Service?"]
     else:
         chips = ["Berapa izin yang sudah expired?","Stasiun ERP tertinggi?","Rekap izin per layanan","Izin di frekuensi 150 MHz?"]
+    st.markdown('<div class="pi-chips"></div>', unsafe_allow_html=True)
     chip_cols = st.columns(len(chips))
     for i, chip in enumerate(chips):
         with chip_cols[i]:
             if st.button(chip, key=f"chip_{i}", use_container_width=True):
                 session.append("user", chip)
-                with st.spinner(""):
+                with st.chat_message("assistant", avatar="📡"):
                     try:
                         ctx = analyst.build_context(chip, uploaded_df, role)
                         if not ctx:
@@ -216,10 +214,12 @@ if not st.session_state.chat_history:
                         if not ctx:
                             ctx = db.summary(role)
                         msgs = prompts.build_messages(chip, ctx, role)
-                        ans = llm.ask(msgs, provider=st.session_state.provider)
-                        session.append("assistant", ans)
+                        ans = st.write_stream(llm.ask_stream(msgs, provider=st.session_state.provider))
+                        session.append("assistant", str(ans))
                     except Exception as ce:
-                        session.append("assistant", f"Terjadi kesalahan: {ce}")
+                        err = f"Terjadi kesalahan: {ce}"
+                        st.error(err)
+                        session.append("assistant", err)
                 st.rerun()
 
 # ── Riwayat chat ─────────────────────────────────────────────────────────

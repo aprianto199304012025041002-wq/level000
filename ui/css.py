@@ -335,8 +335,9 @@ html, body, [class*="css"] { font-family: 'Inter', sans-serif !important; }
 .chip:hover { border-color: var(--signal); color: var(--signal);
               box-shadow: 0 2px 8px rgba(0,180,216,.15); }
 
-/* Chip buttons (Streamlit override) */
-div[data-testid="stHorizontalBlock"] .stButton > button {
+/* Chip buttons: pakai class pi-chips yang di-inject via markdown wrapper */
+.pi-chips + div .stButton > button,
+.pi-chips ~ div .stButton > button {
     background: var(--white) !important;
     border: 1px solid var(--border) !important;
     border-radius: 20px !important;
@@ -346,11 +347,27 @@ div[data-testid="stHorizontalBlock"] .stButton > button {
     padding: 4px 10px !important;
     transition: all .2s !important;
 }
-div[data-testid="stHorizontalBlock"] .stButton > button:hover {
+.pi-chips + div .stButton > button:hover,
+.pi-chips ~ div .stButton > button:hover {
     border-color: var(--signal) !important;
     color: var(--signal) !important;
     box-shadow: 0 2px 8px rgba(0,180,216,.15) !important;
     background: var(--sky) !important;
+}
+
+/* ── Light mode overrides ── */
+@media (prefers-color-scheme: light) {
+    [data-testid="stChatMessage"][data-role="user"] {
+        background: #EFF6FF !important;
+        border-left-color: #1565C0 !important;
+    }
+    [data-testid="stChatMessage"][data-role="assistant"] {
+        background: #F8FAFC !important;
+        border-left-color: #CBD5E1 !important;
+    }
+    [data-testid="stSidebar"] {
+        background: #F1F5F9 !important;
+    }
 }
 </style>
 """
