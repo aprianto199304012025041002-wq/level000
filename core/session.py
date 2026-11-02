@@ -105,7 +105,10 @@ def init(role: str) -> None:
 
 def append(role: str, content: str) -> None:
     """Tambah pesan ke history dan simpan ke MySQL."""
-    st.session_state.chat_history.append({"role": role, "content": content})
+    import datetime as _dt
+    tz = _dt.timezone(_dt.timedelta(hours=7))
+    ts = _dt.datetime.now(tz).strftime("%H:%M WIB")
+    st.session_state.chat_history.append({"role": role, "content": content, "ts": ts})
     sid = st.session_state.get("session_id", "")
     if sid:
         save_message(sid, role, content)

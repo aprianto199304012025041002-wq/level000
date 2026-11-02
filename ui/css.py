@@ -330,8 +330,27 @@ html, body, [class*="css"] { font-family: 'Inter', sans-serif !important; }
     color: var(--navy);
     cursor: pointer;
     font-weight: 500;
-    transition: border-color .2s;
+    transition: all .2s;
 }
-.chip:hover { border-color: var(--signal); color: var(--signal); }
+.chip:hover { border-color: var(--signal); color: var(--signal);
+              box-shadow: 0 2px 8px rgba(0,180,216,.15); }
+
+/* Chip buttons (Streamlit override) */
+div[data-testid="stHorizontalBlock"] .stButton > button {
+    background: var(--white) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 20px !important;
+    color: var(--navy) !important;
+    font-size: 0.73rem !important;
+    font-weight: 500 !important;
+    padding: 4px 10px !important;
+    transition: all .2s !important;
+}
+div[data-testid="stHorizontalBlock"] .stButton > button:hover {
+    border-color: var(--signal) !important;
+    color: var(--signal) !important;
+    box-shadow: 0 2px 8px rgba(0,180,216,.15) !important;
+    background: var(--sky) !important;
+}
 </style>
 """

@@ -13,6 +13,13 @@ def build_context(query: str, df_fallback, role: str) -> str:
     else:
         parts = _pandas_context(q, query, df_fallback, role)
 
+    if not parts:
+        # Tidak ada query khusus terdeteksi — kembalikan ringkasan singkat
+        try:
+            total = db.execute("SELECT COUNT(*) AS cnt FROM isr").iloc[0]["CNT"]
+            return f"Database aktif: {int(total):,} izin spektrum tersedia untuk dianalisis."
+        except Exception:
+            return ""
     return "\n\n".join(parts)
 
 

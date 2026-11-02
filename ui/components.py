@@ -57,7 +57,7 @@ def bento_html(total: int, active: int, expired: int, unknown: int,
 </div>
 """
 
-def welcome_html(role: str) -> str:
+def welcome_html(role: str, chips: bool = True) -> str:
     if role == "public":
         icon, title = "🏙️", "Halo! Saya PAIDI-INSIGHT."
         desc = ("Tanyakan informasi umum tentang layanan radio, nama pemegang izin, "
@@ -77,12 +77,12 @@ def welcome_html(role: str) -> str:
             "Jumlah izin per layanan",
             "Izin di frekuensi 150 MHz?",
         ]
-    chip_html = "".join(f'<span class="chip">{c}</span>' for c in chips)
+    chip_section = "".join(f'<span class="chip">{c}</span>' for c in chips) if chips else ""
     return f"""
 <div class="welcome-box">
     <div class="wi">{icon}</div>
     <h3>{title}</h3>
     <p>{desc}</p>
-    <div class="chip-row">{chip_html}</div>
+    <div class="chip-row">{chip_section}</div>
 </div>
 """

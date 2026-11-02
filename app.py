@@ -193,9 +193,31 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# ── Pesan selamat datang (hanya saat history kosong) ─────────────────────
+# ── Pesan selamat datang + chip yang bisa diklik ─────────────────
 if not st.session_state.chat_history:
-    st.markdown(style.welcome_html(role), unsafe_allow_html=True)
+    st.markdown(style.welcome_html(role, chips=False), unsafe_allow_html=True)
+    if role == "public":
+        chips = ["Layanan radio apa saja di Bantul?","Siapa pemegang izin di Sleman?","Apa itu Fixed Service?"]
+    else:
+        chips = ["Berapa izin yang sudah expired?","Stasiun ERP tertinggi?","Rekap izin per layanan","Izin di frekuensi 150 MHz?"]
+    chip_cols = st.columns(len(chips))
+    for i, chip in enumerate(chips):
+        with chip_cols[i]:
+            if st.button(chip, key=f"chip_{i}", use_container_width=True):
+                session.append("user", chip)
+                with st.spinner(""):
+                    try:
+                        ctx = analyst.build_context(chip, uploaded_df, role)
+                        if not ctx:
+                            ctx = rag.retrieve(chip, uploaded_df, k=5)
+                        if not ctx:
+                            ctx = db.summary(role)
+                        msgs = prompts.build_messages(chip, ctx, role)
+                        ans = llm.ask(msgs, provider=st.session_state.provider)
+                        session.append("assistant", ans)
+                    except Exception as ce:
+                        session.append("assistant", f"Terjadi kesalahan: {ce}")
+                st.rerun()
 
 # ── Riwayat chat ─────────────────────────────────────────────────────────
 for msg in st.session_state.chat_history:
