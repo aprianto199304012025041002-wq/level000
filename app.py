@@ -222,7 +222,7 @@ if not st.session_state.chat_history:
                             ctx = rag.retrieve(chip, uploaded_df, k=5)
                         if not ctx:
                             ctx = db.summary(role)
-                        msgs = prompts.build_messages(chip, ctx, role)
+                        msgs = prompts.build_messages(chip, ctx, role, history=st.session_state.chat_history)
                         ans = st.write_stream(llm.ask_stream(msgs, provider=st.session_state.provider))
                         session.append("assistant", str(ans))
                     except Exception as ce:
@@ -262,7 +262,7 @@ if user_input:
                 context = rag.retrieve(user_input, uploaded_df, k=5)
             if not context:
                 context = db.summary(role)
-            messages = prompts.build_messages(user_input, context, role)
+            messages = prompts.build_messages(user_input, context, role, history=st.session_state.chat_history)
             # Streaming: token muncul satu per satu
             answer = st.write_stream(
                 llm.ask_stream(messages, provider=provider)
