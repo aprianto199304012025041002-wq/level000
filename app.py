@@ -224,6 +224,8 @@ for msg in st.session_state.chat_history:
     with st.chat_message(msg["role"],
                          avatar="🧑" if msg["role"] == "user" else "📡"):
         st.markdown(msg["content"])
+        if msg.get("ts"):
+            st.caption(msg["ts"])
 
 # ── Input ─────────────────────────────────────────────────────────────────
 placeholder = (
