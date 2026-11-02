@@ -4,7 +4,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 import streamlit.components.v1 as components
-from core import analyst, auth, db, llm, prompts, rag
+from core import analyst, auth, db, llm, prompts, rag, session
 from ui import charts, style, dashboard
 
 st.set_page_config(
@@ -65,6 +65,7 @@ if st.session_state.role is None:
         if st.button("→ Masuk sebagai Masyarakat", use_container_width=True, key="btn_pub"):
             st.session_state.role = "public"
             st.session_state.chat_history = []
+            session.init("public")
             st.rerun()
 
     with col2:
@@ -88,6 +89,7 @@ if st.session_state.role is None:
                 if auth.check_officer_password(pwd):
                     st.session_state.update(role="officer", auth_failed=False,
                                             chat_history=[])
+                    session.init("officer")
                     st.rerun()
                 else:
                     st.session_state.auth_failed = True
@@ -103,6 +105,10 @@ if st.session_state.role is None:
 role       = st.session_state.role
 is_officer = role == "officer"
 uploaded_df = st.session_state.uploaded_df if is_officer else None
+
+# Pulihkan atau buat sesi baru
+if "session_id" not in st.session_state:
+    session.init(role)
 
 # ── Sidebar kompak ────────────────────────────────────────────────────────
 with st.sidebar:
@@ -156,9 +162,15 @@ with st.sidebar:
             (st.success if ok else st.error)(msg)
 
     st.divider()
-    if st.button("← Ganti Peran", use_container_width=True):
-        reset()
-        st.rerun()
+    col_a, col_b = st.columns(2)
+    with col_a:
+        if st.button("🗑️ Hapus Chat", use_container_width=True):
+            session.clear(role)
+            st.rerun()
+    with col_b:
+        if st.button("← Keluar", use_container_width=True):
+            reset()
+            st.rerun()
 
     err = db.last_mysql_error()
     if err:
@@ -200,7 +212,7 @@ placeholder = (
 user_input = st.chat_input(placeholder)
 
 if user_input:
-    st.session_state.chat_history.append({"role": "user", "content": user_input})
+    session.append("user", user_input)
     with st.chat_message("user", avatar="🧑"):
         st.markdown(user_input)
 
@@ -215,9 +227,7 @@ if user_input:
                 messages = prompts.build_messages(user_input, context, role)
                 answer = llm.ask(messages, provider=provider)
                 st.markdown(answer)
-                st.session_state.chat_history.append(
-                    {"role": "assistant", "content": answer}
-                )
+                session.append("assistant", answer)
             except Exception as e:
                 msg = str(e)
                 if "quota" in msg.lower() or "429" in msg:
@@ -229,6 +239,4 @@ if user_input:
                 else:
                     err_msg = f"Terjadi kesalahan: {msg}"
                 st.error(err_msg)
-                st.session_state.chat_history.append(
-                    {"role": "assistant", "content": err_msg}
-                )
+                session.append("assistant", err_msg)
