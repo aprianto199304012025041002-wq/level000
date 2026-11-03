@@ -9,6 +9,19 @@ from core import db
 _TABLE_CREATED = False
 
 
+def cleanup_old_sessions(days: int = 7) -> None:
+    """Hapus session yang lebih dari N hari. Dipanggil sesekali."""
+    if not _ensure_table():
+        return
+    try:
+        db.execute(
+            "DELETE FROM chat_sessions WHERE created_at < NOW() - INTERVAL %s DAY",
+            (days,),
+        )
+    except Exception:
+        pass
+
+
 def _ensure_table() -> bool:
     """Buat tabel chat_sessions jika belum ada. Return True kalau MySQL tersedia."""
     global _TABLE_CREATED
@@ -91,6 +104,11 @@ def init(role: str) -> None:
                 st.session_state.session_id = sid
                 st.session_state.chat_history = history
                 return
+
+    # Cleanup session lama sesekali (probabilistik, ~1%)
+    import random
+    if random.random() < 0.01:
+        cleanup_old_sessions()
 
     # Buat sesi baru
     sid = new_session_id()

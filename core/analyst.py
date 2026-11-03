@@ -99,15 +99,17 @@ def _sql_context(q: str, query: str, role: str) -> list[str]:
             parts.append(f"(gagal query frekuensi: {e})")
 
     # Kota
-    cities = ["bantul","sleman","yogyakarta","kulonprogo","gunung kidul","gunungkidul",
-              "magelang","klaten","purworejo","kebumen","wonosobo","temanggung",
-              "boyolali","sukoharjo","wonogiri","karanganyar","sragen","blora",
-              "rembang","pati","kudus","jepara","demak","semarang","kendal",
-              "batang","pekalongan","pemalang","tegal","brebes"]
+    # Ambil kota dari database (cache sederhana via modul)
     PUBLIC_SAFE = "service, subservice, clnt_name, stn_name, stn_addr, city, district, province, village"
     OFFICER_ALL = "clnt_name, stn_name, freq, service, city, validity_date, erp_pwr_dbm, curr_lic_num"
-    for city in cities:
-        if city in q:
+    try:
+        _city_df = db.execute("SELECT DISTINCT LOWER(city) AS c FROM isr WHERE city IS NOT NULL LIMIT 100")
+        _cities = _city_df["C"].tolist()
+    except Exception:
+        _cities = ["bantul","sleman","yogyakarta","kulonprogo","gunungkidul",
+                   "magelang","klaten","semarang","purworejo","kebumen"]
+    for city in _cities:
+        if str(city).lower() in q:
             try:
                 cols = PUBLIC_SAFE if role == "public" else OFFICER_ALL
                 df = db.execute(

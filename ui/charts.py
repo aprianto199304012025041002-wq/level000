@@ -2,10 +2,10 @@
 import plotly.graph_objects as go
 import pandas as pd
 
-NAVY   = "#0D2B55"
-BLUE   = "#1565C0"
-SIGNAL = "#00B4D8"
-COLORS = ["#0D2B55","#1565C0","#0077B6","#00B4D8","#48CAE4","#90E0EF","#023E8A","#0096C7"]
+NAVY   = NAVY
+BLUE   = BLUE
+SIGNAL = SIGNAL
+COLORS = [NAVY,BLUE,"#0077B6",SIGNAL,"#48CAE4","#90E0EF","#023E8A","#0096C7"]
 
 _LAYOUT = dict(
     paper_bgcolor="rgba(0,0,0,0)",
@@ -17,7 +17,7 @@ _LAYOUT = dict(
 
 # Palet wilayah: biru-navy (cool)
 _PAL_WILAYAH = [
-    "#0D2B55","#1565C0","#1976D2","#1E88E5",
+    NAVY,BLUE,"#1976D2","#1E88E5",
     "#2196F3","#42A5F5","#64B5F6","#90CAF9",
     "#0077B6","#023E8A",
 ]
@@ -53,7 +53,7 @@ def sunburst_wilayah(df: pd.DataFrame) -> go.Figure:
     n = len(ids)
     node_colors = []
     for i, pid in enumerate(parents):
-        if pid == "":          node_colors.append("#0D2B55")   # root
+        if pid == "":          node_colors.append(NAVY)   # root
         elif pid == "root":    node_colors.append(_PAL_WILAYAH[i % 4])
         else:                  node_colors.append(_PAL_WILAYAH[4 + (i % 6)])
 

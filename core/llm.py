@@ -24,6 +24,24 @@ class ModelError(Exception):
     """Error dari model yang tidak bisa di-recover."""
 
 
+def _retry(fn, retries: int = 2, delay: float = 1.5):
+    """Retry sederhana untuk network error sementara (bukan QuotaError)."""
+    import time
+    last_err = None
+    for attempt in range(retries + 1):
+        try:
+            return fn()
+        except QuotaError:
+            raise
+        except ModelError:
+            raise
+        except Exception as e:
+            last_err = e
+            if attempt < retries:
+                time.sleep(delay)
+    raise ModelError(str(last_err)) from last_err
+
+
 def ask(messages: list[dict], temperature: float = 0.3, provider: str | None = None) -> str:
     # Mode uji tanpa API
     if _get("MOCK_LLM") == "1":
