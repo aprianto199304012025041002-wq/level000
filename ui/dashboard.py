@@ -1,6 +1,6 @@
 """Bento dashboard: stat cards + sunburst charts untuk landing page."""
 import streamlit as st
-import streamlit.components.v1 as components
+
 
 from core import db
 from . import charts
@@ -103,7 +103,7 @@ def render() -> None:
         df_svc.columns = [c.upper() for c in df_svc.columns]
 
         # Baris 1: Card total + jam live
-        components.html(stat_card_html(total, tgl), height=150)
+        st.iframe(stat_card_html(total, tgl), height=150)
         st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
 
         # Baris 2: Sunburst wilayah + service
