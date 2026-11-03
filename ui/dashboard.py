@@ -3,7 +3,7 @@ import streamlit as st
 import streamlit.components.v1 as components
 
 from core import db
-from ui import charts
+from . import charts
 
 _CARD_JS = (
     "<script>"

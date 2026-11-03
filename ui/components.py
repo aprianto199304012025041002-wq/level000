@@ -1,5 +1,5 @@
 """HTML komponen untuk PAIDI-INSIGHT."""
-from ui.css import CSS
+from .css import CSS
 
 HEADER_HTML = """
 <div class="pi-header">
