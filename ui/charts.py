@@ -2,9 +2,9 @@
 import plotly.graph_objects as go
 import pandas as pd
 
-NAVY   = NAVY
-BLUE   = BLUE
-SIGNAL = SIGNAL
+NAVY   = "#0D2B55"
+BLUE   = "#1565C0"
+SIGNAL = "#00B4D8"
 COLORS = [NAVY,BLUE,"#0077B6",SIGNAL,"#48CAE4","#90E0EF","#023E8A","#0096C7"]
 
 _LAYOUT = dict(
