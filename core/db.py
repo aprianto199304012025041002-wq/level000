@@ -114,10 +114,12 @@ def search(query_text: str, role: str = "public", limit: int = 10) -> pd.DataFra
         except Exception:
             pass
 
-    # Fallback CSV + BM25
-    from core import rag as _rag
+    # Fallback CSV: simple string search
     df = _load_csv(role)
-    return _rag.search(query_text, df, k=limit)
+    if not query_text.strip():
+        return df.head(limit)
+    mask = df.apply(lambda row: query_text.lower() in " ".join(str(v) for v in row).lower(), axis=1)
+    return df[mask].head(limit)
 
 
 @functools.lru_cache(maxsize=2)
