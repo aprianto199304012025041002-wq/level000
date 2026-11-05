@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-CSV_PATH = Path(__file__).parent / "data" / "QUERY_14_JANUARI_2026.csv"
+CSV_PATH = Path(__file__).parent.parent / "data" / "QUERY_14_JANUARI_2026.csv"
 
 PUBLIC_COLS_SQL  = "service, subservice, stn_name, stn_addr, city, district, province, village, clnt_name"
 PUBLIC_COLS_PY   = ["SERVICE","SUBSERVICE","STN_NAME","STN_ADDR","CITY","DISTRICT","PROVINCE","VILLAGE","CLNT_NAME"]

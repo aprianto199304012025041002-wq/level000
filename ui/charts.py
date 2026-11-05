@@ -133,6 +133,71 @@ def sunburst_service(df: pd.DataFrame) -> go.Figure:
 
 
 
+
+def bar_masa_berlaku(df) -> "go.Figure":
+    """Bar chart horizontal: expired vs aktif per layanan."""
+    import pandas as pd
+    df2 = df.copy()
+    df2["_vd"] = pd.to_datetime(df2.get("VALIDITY_DATE", pd.Series()), errors="coerce")
+    df2["_tq"] = pd.to_datetime(df2.get("TGL_QUERY", pd.Series()), errors="coerce")
+    df2["status"] = df2.apply(lambda r:
+        "Aktif" if pd.notna(r["_vd"]) and r["_vd"] >= r["_tq"]
+        else ("Expired" if pd.notna(r["_vd"]) else "Tidak diketahui"), axis=1)
+
+    pivot = df2.groupby(["SERVICE","status"]).size().unstack(fill_value=0).reset_index()
+    svcs  = pivot["SERVICE"].tolist()
+
+    traces = []
+    color_map = {"Aktif": "#16A34A", "Expired": "#DC2626", "Tidak diketahui": "#D97706"}
+    for col in ["Aktif","Expired","Tidak diketahui"]:
+        if col in pivot.columns:
+            traces.append(go.Bar(
+                name=col, y=svcs, x=pivot[col].tolist(),
+                orientation="h",
+                marker_color=color_map[col],
+                hovertemplate=f"<b>%{{y}}</b><br>{col}: %{{x:,}}<extra></extra>",
+            ))
+
+    fig = go.Figure(traces)
+    fig.update_layout(
+        **_LAYOUT, barmode="stack", height=280,
+        margin=dict(t=36, b=20, l=10, r=10),
+        legend=dict(orientation="h", y=-0.18, x=0.5, xanchor="center",
+                    font=dict(size=10)),
+        xaxis=dict(visible=False),
+        yaxis=dict(tickfont=dict(size=9)),
+        title=dict(text="Masa Berlaku Izin per Layanan",
+                   font=dict(size=12, color=NAVY), x=0.5, xanchor="center", y=0.97),
+    )
+    return fig
+
+
+def bar_top_clnt(df, top_n: int = 10) -> "go.Figure":
+    """Bar chart horizontal: top pemegang izin."""
+    top = df.groupby("CLNT_NAME").size().nlargest(top_n).reset_index(name="cnt")
+    # Perpendek nama yang terlalu panjang
+    top["label"] = top["CLNT_NAME"].str[:40]
+
+    colors = [_PAL_WILAYAH[i % len(_PAL_WILAYAH)] for i in range(len(top))]
+    fig = go.Figure(go.Bar(
+        x=top["cnt"].tolist(),
+        y=top["label"].tolist(),
+        orientation="h",
+        marker_color=colors,
+        text=top["cnt"].apply(lambda v: f"{int(v):,}"),
+        textposition="outside",
+        hovertemplate="<b>%{y}</b><br>%{x:,} izin<extra></extra>",
+    ))
+    fig.update_layout(
+        **_LAYOUT, height=320,
+        margin=dict(t=36, b=20, l=10, r=50),
+        xaxis=dict(visible=False),
+        yaxis=dict(tickfont=dict(size=9), autorange="reversed"),
+        title=dict(text=f"Top {top_n} Pemegang Izin",
+                   font=dict(size=12, color=NAVY), x=0.5, xanchor="center", y=0.97),
+    )
+    return fig
+
 def card_total_html(total: int, active: int, expired: int, tgl: str = "-") -> str:
     pa = round(active/total*100) if total else 0
     pe = round(expired/total*100) if total else 0
