@@ -74,16 +74,10 @@ def render():
         st.iframe(_stat_card(total, tgl), height=150)
         st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
 
-        # Baris 2: Insight Gemini + Wilayah
+        # Siapkan placeholder insight (diisi SETELAH chart selesai render)
         c1, c2 = st.columns(2, gap="small")
         with c1:
-            with st.container(border=True):
-                st.markdown(
-                    "<div style='font-size:.7rem;font-weight:600;letter-spacing:.08em;"
-                    "color:#64748B;text-transform:uppercase;margin-bottom:.6rem'>✨ Insight AI</div>",
-                    unsafe_allow_html=True)
-                with st.spinner("Gemini menganalisis data..."):
-                    st.markdown(insights.generate(tgl))
+            insight_placeholder = st.empty()
         with c2:
             with st.container(border=True):
                 st.plotly_chart(charts.sunburst_wilayah(df_wil),
@@ -108,6 +102,14 @@ def render():
         with st.container(border=True):
             st.plotly_chart(charts.bar_top_clnt(df_all, top_n=10),
                             width="stretch", config={"displayModeBar": False})
+
+        # Sekarang baru isi insight (chart sudah tampil semua)
+        with insight_placeholder.container(border=True):
+            st.markdown(
+                "<div style='font-size:.7rem;font-weight:600;letter-spacing:.08em;"
+                "color:#64748B;text-transform:uppercase;margin-bottom:.6rem'>✨ Insight AI</div>",
+                unsafe_allow_html=True)
+            st.markdown(insights.generate(tgl))
 
         st.markdown(
             "<div style='text-align:center;font-size:.65rem;color:#94A3B8;margin-top:1rem'>"
