@@ -160,8 +160,8 @@ def bar_masa_berlaku(df) -> "go.Figure":
 
     fig = go.Figure(traces)
     fig.update_layout(
-        **_LAYOUT, barmode="stack", height=280,
-        margin=dict(t=36, b=20, l=10, r=10),
+        **{**_LAYOUT, "margin": dict(t=36, b=20, l=10, r=10)},
+        barmode="stack", height=280,
         legend=dict(orientation="h", y=-0.18, x=0.5, xanchor="center",
                     font=dict(size=10)),
         xaxis=dict(visible=False),
@@ -189,8 +189,8 @@ def bar_top_clnt(df, top_n: int = 10) -> "go.Figure":
         hovertemplate="<b>%{y}</b><br>%{x:,} izin<extra></extra>",
     ))
     fig.update_layout(
-        **_LAYOUT, height=320,
-        margin=dict(t=36, b=20, l=10, r=50),
+        **{**_LAYOUT, "margin": dict(t=36, b=20, l=10, r=50)},
+        height=320,
         xaxis=dict(visible=False),
         yaxis=dict(tickfont=dict(size=9), autorange="reversed"),
         title=dict(text=f"Top {top_n} Pemegang Izin",
